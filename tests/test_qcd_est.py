@@ -234,3 +234,59 @@ def test_hist_setup_matches_events(tmp_path):
     write_root(tmp_path / "q.root", res, sr_csv_hash(tmp_path / "sr.csv"), log=lambda m: None)
     with uproot.open(tmp_path / "q.root") as f:
         assert f["metadata/signal_regions"].classname == "TTree"
+
+
+def test_skim_setup_data_per_file_and_mc_lumi(tmp_path):
+    """estimate_qcd.py --skim-dir (SkimSetup): data read file by file gives the counts of one fill, the
+    blinded pass bins stay empty, and mc_lumi rescales the MC weights from the config's lumi."""
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    from vvv.background.skims import SkimSetup
+    from vvv.samples import Sample
+
+    events = _events(seed=7, n=3000)
+    cat = "boosted3"
+
+    def write(root, sample, parts):
+        d = root / sample / cat / "nominal"
+        d.mkdir(parents=True)
+        (root / sample / "_DONE.json").write_text("{}")
+        for k, (proba, mass, weight) in enumerate(parts):
+            cols = {f"proba_{c}": proba[:, i] for i, c in enumerate(CLASSES)}
+            cols[MSD] = mass.astype(np.float32)
+            if weight is not None:
+                cols["weight"] = weight
+            pq.write_table(pa.table(cols), d / f"part-{k:05d}.parquet")
+
+    for s, (_, proba, mass, weight) in events.items():
+        write(tmp_path / "mc", s, [(proba, mass, weight)])
+    _, dproba, dmass, _ = _events(seed=8, n=3000)["s_QCD"]
+    write(tmp_path / "data", "data_2024", [(dproba[i::3], dmass[i::3], None) for i in range(3)])
+    mf = {"range": [20, 250], "width": 10, "residual_order": 0}
+    (tmp_path / "sr.csv").write_text("bin_index,VVV_low,VVV_high,VV_low,VV_high\n1,0.5,1.0,0.0,1.0\n2,0.2,0.5,0.3,0.6\n")
+    (tmp_path / "train.json").write_text(json.dumps({"class_groups": {c: [f"s_{c}"] for c in CLASSES},
+                                                     "categories": {cat: {"thresholds": {MSD: [50, 150]}}}}))
+    (tmp_path / "qcd_est.json").write_text(json.dumps({"lumi": 200.0, "abcd_mode": "massfit", "massfit": {cat: mf}}))
+    catalogue = {f"s_{c}": Sample(f"s_{c}", (), "signal" if c in ("VVV", "VH") else "background", 1) for c in CLASSES}
+
+    def run(mc_lumi):
+        setup = SkimSetup(tmp_path / "qcd_est.json", tmp_path / "train.json", cat, tmp_path / "mc", tmp_path / "sr.csv",
+                          tmp_path / "out", data_skim_dir=tmp_path / "data", catalogue=catalogue, mc_lumi=mc_lumi)
+        acc = setup.accumulator(log=lambda m: None)
+        setup.fill_mc(acc, log=lambda m: None)
+        setup.fill_data(acc, log=lambda m: None)
+        return setup, acc.inputs()
+
+    setup, inp = run(None)
+    assert setup.mc_scale == 1.0 and setup.massfit.blind_window == (50.0, 150.0)
+    ref = MassfitAccumulator(setup.massfit, BOXES, CLASSES, {}, ["QCD"], (50, 150), log=lambda m: None)
+    ref.fill_data(dmass.astype(np.float32), proba=dproba)
+    assert np.array_equal(inp.data, ref.data)
+    assert (inp.data[1:, inp.blinded] == 0).all() and inp.data[0, inp.blinded].sum() > 0
+    assert inp.data[1:, ~inp.blinded].sum() > 0
+    setup50, inp50 = run(50.0)
+    assert setup50.mc_scale == pytest.approx(0.25) and setup50.lumi == 50.0
+    assert np.allclose(inp50.sums["s_QCD"][0], 0.25 * inp.sums["s_QCD"][0], rtol=1e-12)
+    assert np.allclose(inp50.sums["s_QCD"][1], 0.0625 * inp.sums["s_QCD"][1], rtol=1e-12)
+    assert np.array_equal(inp50.data, inp.data)

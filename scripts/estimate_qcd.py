@@ -12,7 +12,8 @@ qcd_massfit_sr<i>.pdf.
 With --skim-dir the events come from the coffea MC fit-region skims instead (vvv.background.skims:
 the config supplies only the massfit settings and exclude_samples; --training-config and
 --category the classes and the msoftdrop_1 window, --signal-region-csv the SR boxes, --output-dir
-the output; --data-skim-dir adds data, which needs proba_<class> columns).
+the output; --data-skim-dir adds data, which needs proba_<class> columns; --lumi rescales the MC from
+the config's lumi, that of the skim weights, to another luminosity, e.g. the data's for a fit to data).
 
 With --hists the binned sums come from the nominal mass histograms of `vvv run` pickles (files or
 directories; vvv.background.hists), the same pass that feeds scripts/make_syst_yields.py; the other
@@ -90,6 +91,8 @@ def main():
     p.add_argument("--category", help="with --skim-dir")
     p.add_argument("--signal-region-csv", type=Path, help="with --skim-dir")
     p.add_argument("--data-skim-dir", type=Path, help="with --skim-dir: data skims with proba_<class> columns")
+    p.add_argument("--lumi", type=float, help="with --skim-dir: MC normalised to this luminosity (fb^-1) instead "
+                   "of the config's lumi (that of the skim weights)")
     p.add_argument("--hists", type=Path, nargs="+", help="vvv run histogram pickles or directories (instead of the "
                    "skims or the legacy score cache)")
     args = p.parse_args()
@@ -100,6 +103,8 @@ def main():
     from vvv.background.skims import SkimSetup
 
     t0 = time.time()
+    if args.lumi is not None and not args.skim_dir:
+        p.error("--lumi needs --skim-dir")
     if args.hists:
         if not (args.training_config and args.category and args.signal_region_csv and args.output_dir):
             p.error("--hists needs --training-config, --category, --signal-region-csv and --output-dir")
@@ -111,7 +116,7 @@ def main():
         if not (args.training_config and args.category and args.signal_region_csv and args.output_dir):
             p.error("--skim-dir needs --training-config, --category, --signal-region-csv and --output-dir")
         setup = SkimSetup(args.config, args.training_config, args.category, args.skim_dir, args.signal_region_csv,
-                          args.output_dir, data_skim_dir=args.data_skim_dir,
+                          args.output_dir, data_skim_dir=args.data_skim_dir, mc_lumi=args.lumi,
                           **({"data_sample": args.data_sample} if args.data_sample else {}))
     else:
         setup = LegacySetup.load(args.config, {"data_sample": args.data_sample} if args.data_sample else None)
@@ -136,7 +141,7 @@ def main():
     if args.plots and result["tf"] is not None:
         plot(result, out_dir, setup.branch)
     report = summary(result)
-    report.update({"config": str(args.config), "tree": setup.tree, "bdt_root": str(setup.bdt_root),
+    report.update({"config": str(args.config), "tree": setup.tree, "bdt_root": str(setup.bdt_root), "lumi": setup.lumi,
                    "signal_region_csv": str(setup.signal_region_csv), "load_seconds": t_load,
                    "total_seconds": time.time() - t0,
                    "peak_rss_gb": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1e6})
