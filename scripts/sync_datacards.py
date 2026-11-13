@@ -48,6 +48,7 @@ sys.path.insert(0, str(REPO / "src"))
 
 from vvv.stats.combine_run import cms_shell, run_all  # noqa: E402
 from vvv.stats.datacards import load_config, write_all  # noqa: E402
+from vvv.paths import load_config as load_vvv_config  # noqa: E402
 
 STEPS = ("build", "synthetic", "legacy", "python", "compare")
 SYST_JSON_KEYS = ("theory_syst_json", "pileup_syst_json", "jes_syst_json", "jer_syst_json", "jms_syst_json",
@@ -85,7 +86,7 @@ def build(spec, out, force):
 
 
 def registry_stub(spec, out, training_config):
-    tcfg = json.loads((REPO / training_config).read_text())
+    tcfg = load_vvv_config(REPO / training_config)
     d = out / "registry" / Path(training_config).stem
     d.mkdir(parents=True, exist_ok=True)
     (d / "config.json").write_text(json.dumps({
@@ -154,7 +155,7 @@ def case_config(spec, out, name, case):
     """The combine.C config of a case (absolute paths; output_dir set per run)."""
     cfg = case["config"]
     if isinstance(cfg, str):
-        cfg = json.loads(Path(cfg).read_text())
+        cfg = load_vvv_config(cfg)
     cfg = copy.deepcopy(cfg)
     for ch in cfg["channels"]:
         if "registry" in ch:
@@ -452,7 +453,7 @@ def main():
     p.add_argument("--jobs", type=int, default=6, help="cases (combine.C) or Combine runs (python) in parallel")
     p.add_argument("--force", action="store_true")
     args = p.parse_args()
-    spec = json.loads(args.spec.read_text())
+    spec = load_vvv_config(args.spec)
     out = args.out.resolve()
     out.mkdir(parents=True, exist_ok=True)
     (out / "spec.json").write_text(json.dumps(spec, indent=1))

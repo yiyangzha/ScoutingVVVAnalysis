@@ -48,7 +48,10 @@ def main():
         return
 
     config = Path(args.config).resolve()
-    cfg = json.loads(config.read_text())
+    sys.path.insert(0, str(REPO / "src"))  # the AF global environment has no vvv package
+    from vvv.paths import environment, load_config
+
+    cfg = load_config(config)
     if not str(Path(cfg["output_dir"]).resolve()).startswith(("/work/", "/depot/")):
         sys.exit("output_dir must be on /work or /depot: the Ray cluster has no /home")
     headers = {
@@ -69,7 +72,8 @@ def main():
         runtime_env={
             "working_dir": str(REPO),
             "excludes": [".pixi", ".git", "data/filelists", "metadata", "*.parquet", "*.pkl"],
-            "env_vars": {"PYTHONPATH": "src", "PYTHONUNBUFFERED": "1"},
+            # the ${VVV_*} locations of the config, resolved here (Ray workers have no $USER)
+            "env_vars": {"PYTHONPATH": "src", "PYTHONUNBUFFERED": "1", **environment()},
         },
     )
     print(f"submitted {job} with {headers}")

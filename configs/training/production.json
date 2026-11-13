@@ -12,8 +12,8 @@
  "decor_tail_min_prob": 0.0002,
  "decor_tail_n": 10,
  "metric_eval_every": 5,
- "skim_dir": "/depot/cms/users/schul105/VVV/skims",
- "output_dir": "/work/users/schul105/vvv/models/production",
+ "skim_dir": "${VVV_DEPOT}/skims",
+ "output_dir": "${VVV_WORK}/models/production",
  "class_groups": {
   "VVV": [
    "www",
@@ -1118,11 +1118,11 @@
   }
  },
  "source": {
-  "boosted3": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/selections/BDT/study_boosted3/kfold_finedecor_jec_powheg",
-  "boosted2_resolved": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/selections/BDT/study_boosted3/kfold_finedecor_jec_powheg_resolved",
-  "boosted2_unresolved": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/selections/BDT/study_boosted3/kfold_finedecor_jec_powheg_unresolved",
-  "boosted2_leptonic_1lep": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/selections/BDT/study_boosted3/kfold_finedecor_jec_powheg_1lep",
-  "boosted2_leptonic_2lep": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/selections/BDT/study_boosted3/kfold_finedecor_jec_powheg_2lep"
+  "boosted3": "${VVV_LEGACY}/selections/BDT/study_boosted3/kfold_finedecor_jec_powheg",
+  "boosted2_resolved": "${VVV_LEGACY}/selections/BDT/study_boosted3/kfold_finedecor_jec_powheg_resolved",
+  "boosted2_unresolved": "${VVV_LEGACY}/selections/BDT/study_boosted3/kfold_finedecor_jec_powheg_unresolved",
+  "boosted2_leptonic_1lep": "${VVV_LEGACY}/selections/BDT/study_boosted3/kfold_finedecor_jec_powheg_1lep",
+  "boosted2_leptonic_2lep": "${VVV_LEGACY}/selections/BDT/study_boosted3/kfold_finedecor_jec_powheg_2lep"
  },
  "class_scale": {
   "QCD": 2.0

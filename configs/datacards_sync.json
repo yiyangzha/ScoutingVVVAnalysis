@@ -1,27 +1,27 @@
 {
  "note": "datacard writer sync: Python port vs combine.C (legacy HEAD 8558443), see scripts/sync_datacards.py",
- "legacy_repo": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools",
- "cmssw_src": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src",
+ "legacy_repo": "${VVV_LEGACY}",
+ "cmssw_src": "${VVV_CMSSW}",
  "cases": {
   "legacy_b3": {
-   "config": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/selections/BDT/study_boosted3/sr_granularity/kfold_finedecor_jec_powheg_massfit/n4_minb0_minc25/combine.json",
-   "recorded": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/selections/BDT/study_boosted3/sr_granularity/kfold_finedecor_jec_powheg_massfit/n4_minb0_minc25/combine"
+   "config": "${VVV_LEGACY}/selections/BDT/study_boosted3/sr_granularity/kfold_finedecor_jec_powheg_massfit/n4_minb0_minc25/combine.json",
+   "recorded": "${VVV_LEGACY}/selections/BDT/study_boosted3/sr_granularity/kfold_finedecor_jec_powheg_massfit/n4_minb0_minc25/combine"
   },
   "legacy_res": {
-   "config": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/selections/BDT/study_boosted3/sr_granularity/kfold_finedecor_jec_powheg_resolved_massfit_owntf/n4_minb0_minc50/combine.json",
-   "recorded": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/selections/BDT/study_boosted3/sr_granularity/kfold_finedecor_jec_powheg_resolved_massfit_owntf/n4_minb0_minc50/combine"
+   "config": "${VVV_LEGACY}/selections/BDT/study_boosted3/sr_granularity/kfold_finedecor_jec_powheg_resolved_massfit_owntf/n4_minb0_minc50/combine.json",
+   "recorded": "${VVV_LEGACY}/selections/BDT/study_boosted3/sr_granularity/kfold_finedecor_jec_powheg_resolved_massfit_owntf/n4_minb0_minc50/combine"
   },
   "legacy_unres": {
-   "config": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/selections/BDT/study_boosted3/sr_granularity/kfold_finedecor_jec_powheg_unresolved_massfit_owntf/n3_minb0_minc25/combine.json",
-   "recorded": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/selections/BDT/study_boosted3/sr_granularity/kfold_finedecor_jec_powheg_unresolved_massfit_owntf/n3_minb0_minc25/combine"
+   "config": "${VVV_LEGACY}/selections/BDT/study_boosted3/sr_granularity/kfold_finedecor_jec_powheg_unresolved_massfit_owntf/n3_minb0_minc25/combine.json",
+   "recorded": "${VVV_LEGACY}/selections/BDT/study_boosted3/sr_granularity/kfold_finedecor_jec_powheg_unresolved_massfit_owntf/n3_minb0_minc25/combine"
   },
   "legacy_1lep": {
-   "config": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/selections/BDT/study_boosted3/sr_granularity/kfold_finedecor_jec_powheg_1lep_massfit_mcqcd/n4_minb0/combine.json",
-   "recorded": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/selections/BDT/study_boosted3/sr_granularity/kfold_finedecor_jec_powheg_1lep_massfit_mcqcd/n4_minb0/combine"
+   "config": "${VVV_LEGACY}/selections/BDT/study_boosted3/sr_granularity/kfold_finedecor_jec_powheg_1lep_massfit_mcqcd/n4_minb0/combine.json",
+   "recorded": "${VVV_LEGACY}/selections/BDT/study_boosted3/sr_granularity/kfold_finedecor_jec_powheg_1lep_massfit_mcqcd/n4_minb0/combine"
   },
   "legacy_2lep": {
-   "config": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/selections/BDT/study_boosted3/sr_granularity/kfold_finedecor_jec_powheg_2lep_massfit_nlo/n3_minb0/combine.json",
-   "recorded": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/selections/BDT/study_boosted3/sr_granularity/kfold_finedecor_jec_powheg_2lep_massfit_nlo/n3_minb0/combine"
+   "config": "${VVV_LEGACY}/selections/BDT/study_boosted3/sr_granularity/kfold_finedecor_jec_powheg_2lep_massfit_nlo/n3_minb0/combine.json",
+   "recorded": "${VVV_LEGACY}/selections/BDT/study_boosted3/sr_granularity/kfold_finedecor_jec_powheg_2lep_massfit_nlo/n3_minb0/combine"
   },
   "legacy_all5": {
    "config": {
@@ -29,7 +29,7 @@
     "combine_cards_cmd": "combineCards.py",
     "lumi_unc": 0.016,
     "trigger_unc": 0.02,
-    "xsec_unc_json": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/combine/xsec_unc.json",
+    "xsec_unc_json": "${VVV_LEGACY}/combine/xsec_unc.json",
     "mc_stat_threshold": 10,
     "use_root_covariance": false,
     "eigen_rel_cutoff": 1e-10,
@@ -41,28 +41,28 @@
     "channels": [
      {
       "name": "boosted3",
-      "root_file": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/selections/BDT/study_boosted3/sr_granularity/kfold_finedecor_jec_powheg_massfit/n4_minb0_minc25/qcd_est/qcd_abcd_yields.root",
-      "bdt_root": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/selections/BDT/study_boosted3/kfold_finedecor_jec_powheg/boosted3"
+      "root_file": "${VVV_LEGACY}/selections/BDT/study_boosted3/sr_granularity/kfold_finedecor_jec_powheg_massfit/n4_minb0_minc25/qcd_est/qcd_abcd_yields.root",
+      "bdt_root": "${VVV_LEGACY}/selections/BDT/study_boosted3/kfold_finedecor_jec_powheg/boosted3"
      },
      {
       "name": "boosted2_resolved",
-      "root_file": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/selections/BDT/study_boosted3/sr_granularity/kfold_finedecor_jec_powheg_resolved_massfit_owntf/n4_minb0_minc50/qcd_est/qcd_abcd_yields.root",
-      "bdt_root": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/selections/BDT/study_boosted3/kfold_finedecor_jec_powheg_resolved/boosted2_resolved"
+      "root_file": "${VVV_LEGACY}/selections/BDT/study_boosted3/sr_granularity/kfold_finedecor_jec_powheg_resolved_massfit_owntf/n4_minb0_minc50/qcd_est/qcd_abcd_yields.root",
+      "bdt_root": "${VVV_LEGACY}/selections/BDT/study_boosted3/kfold_finedecor_jec_powheg_resolved/boosted2_resolved"
      },
      {
       "name": "boosted2_unresolved",
-      "root_file": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/selections/BDT/study_boosted3/sr_granularity/kfold_finedecor_jec_powheg_unresolved_massfit_owntf/n3_minb0_minc25/qcd_est/qcd_abcd_yields.root",
-      "bdt_root": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/selections/BDT/study_boosted3/kfold_finedecor_jec_powheg_unresolved/boosted2_unresolved"
+      "root_file": "${VVV_LEGACY}/selections/BDT/study_boosted3/sr_granularity/kfold_finedecor_jec_powheg_unresolved_massfit_owntf/n3_minb0_minc25/qcd_est/qcd_abcd_yields.root",
+      "bdt_root": "${VVV_LEGACY}/selections/BDT/study_boosted3/kfold_finedecor_jec_powheg_unresolved/boosted2_unresolved"
      },
      {
       "name": "boosted2_leptonic_1lep",
-      "root_file": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/selections/BDT/study_boosted3/sr_granularity/kfold_finedecor_jec_powheg_1lep_massfit_mcqcd/n4_minb0/qcd_est/qcd_abcd_yields.root",
-      "bdt_root": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/selections/BDT/study_boosted3/kfold_finedecor_jec_powheg_1lep/boosted2_leptonic_1lep"
+      "root_file": "${VVV_LEGACY}/selections/BDT/study_boosted3/sr_granularity/kfold_finedecor_jec_powheg_1lep_massfit_mcqcd/n4_minb0/qcd_est/qcd_abcd_yields.root",
+      "bdt_root": "${VVV_LEGACY}/selections/BDT/study_boosted3/kfold_finedecor_jec_powheg_1lep/boosted2_leptonic_1lep"
      },
      {
       "name": "boosted2_leptonic_2lep",
-      "root_file": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/selections/BDT/study_boosted3/sr_granularity/kfold_finedecor_jec_powheg_2lep_massfit_nlo/n3_minb0/qcd_est/qcd_abcd_yields.root",
-      "bdt_root": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/selections/BDT/study_boosted3/kfold_finedecor_jec_powheg_2lep/boosted2_leptonic_2lep"
+      "root_file": "${VVV_LEGACY}/selections/BDT/study_boosted3/sr_granularity/kfold_finedecor_jec_powheg_2lep_massfit_nlo/n3_minb0/qcd_est/qcd_abcd_yields.root",
+      "bdt_root": "${VVV_LEGACY}/selections/BDT/study_boosted3/kfold_finedecor_jec_powheg_2lep/boosted2_leptonic_2lep"
      }
     ],
     "enabled_nuisances": [
@@ -79,7 +79,7 @@
     "combine_cards_cmd": "combineCards.py",
     "lumi_unc": 0.016,
     "trigger_unc": 0.02,
-    "xsec_unc_json": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/combine/xsec_unc.json",
+    "xsec_unc_json": "${VVV_LEGACY}/combine/xsec_unc.json",
     "mc_stat_threshold": 10,
     "use_root_covariance": false,
     "eigen_rel_cutoff": 1e-10,
@@ -91,7 +91,7 @@
     "channels": [
      {
       "name": "boosted3",
-      "root_file": "/work/users/schul105/vvv/qcd_est/baseline/boosted3/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/qcd_est/baseline/boosted3/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      }
     ],
@@ -109,7 +109,7 @@
     "combine_cards_cmd": "combineCards.py",
     "lumi_unc": 0.016,
     "trigger_unc": 0.02,
-    "xsec_unc_json": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/combine/xsec_unc.json",
+    "xsec_unc_json": "${VVV_LEGACY}/combine/xsec_unc.json",
     "mc_stat_threshold": 10,
     "use_root_covariance": false,
     "eigen_rel_cutoff": 1e-10,
@@ -121,7 +121,7 @@
     "channels": [
      {
       "name": "boosted2_resolved",
-      "root_file": "/work/users/schul105/vvv/qcd_est/baseline/boosted2_resolved/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/qcd_est/baseline/boosted2_resolved/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      }
     ],
@@ -139,7 +139,7 @@
     "combine_cards_cmd": "combineCards.py",
     "lumi_unc": 0.016,
     "trigger_unc": 0.02,
-    "xsec_unc_json": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/combine/xsec_unc.json",
+    "xsec_unc_json": "${VVV_LEGACY}/combine/xsec_unc.json",
     "mc_stat_threshold": 10,
     "use_root_covariance": false,
     "eigen_rel_cutoff": 1e-10,
@@ -151,7 +151,7 @@
     "channels": [
      {
       "name": "boosted2_unresolved",
-      "root_file": "/work/users/schul105/vvv/qcd_est/baseline/boosted2_unresolved/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/qcd_est/baseline/boosted2_unresolved/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      }
     ],
@@ -169,7 +169,7 @@
     "combine_cards_cmd": "combineCards.py",
     "lumi_unc": 0.016,
     "trigger_unc": 0.02,
-    "xsec_unc_json": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/combine/xsec_unc.json",
+    "xsec_unc_json": "${VVV_LEGACY}/combine/xsec_unc.json",
     "mc_stat_threshold": 10,
     "use_root_covariance": false,
     "eigen_rel_cutoff": 1e-10,
@@ -181,7 +181,7 @@
     "channels": [
      {
       "name": "boosted2_leptonic_1lep",
-      "root_file": "/work/users/schul105/vvv/qcd_est/baseline/boosted2_leptonic_1lep/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/qcd_est/baseline/boosted2_leptonic_1lep/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      }
     ],
@@ -199,7 +199,7 @@
     "combine_cards_cmd": "combineCards.py",
     "lumi_unc": 0.016,
     "trigger_unc": 0.02,
-    "xsec_unc_json": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/combine/xsec_unc.json",
+    "xsec_unc_json": "${VVV_LEGACY}/combine/xsec_unc.json",
     "mc_stat_threshold": 10,
     "use_root_covariance": false,
     "eigen_rel_cutoff": 1e-10,
@@ -211,7 +211,7 @@
     "channels": [
      {
       "name": "boosted2_leptonic_2lep",
-      "root_file": "/work/users/schul105/vvv/qcd_est/baseline/boosted2_leptonic_2lep/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/qcd_est/baseline/boosted2_leptonic_2lep/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      }
     ],
@@ -229,7 +229,7 @@
     "combine_cards_cmd": "combineCards.py",
     "lumi_unc": 0.016,
     "trigger_unc": 0.02,
-    "xsec_unc_json": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/combine/xsec_unc.json",
+    "xsec_unc_json": "${VVV_LEGACY}/combine/xsec_unc.json",
     "mc_stat_threshold": 10,
     "use_root_covariance": false,
     "eigen_rel_cutoff": 1e-10,
@@ -241,27 +241,27 @@
     "channels": [
      {
       "name": "boosted3",
-      "root_file": "/work/users/schul105/vvv/qcd_est/baseline/boosted3/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/qcd_est/baseline/boosted3/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      },
      {
       "name": "boosted2_resolved",
-      "root_file": "/work/users/schul105/vvv/qcd_est/baseline/boosted2_resolved/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/qcd_est/baseline/boosted2_resolved/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      },
      {
       "name": "boosted2_unresolved",
-      "root_file": "/work/users/schul105/vvv/qcd_est/baseline/boosted2_unresolved/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/qcd_est/baseline/boosted2_unresolved/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      },
      {
       "name": "boosted2_leptonic_1lep",
-      "root_file": "/work/users/schul105/vvv/qcd_est/baseline/boosted2_leptonic_1lep/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/qcd_est/baseline/boosted2_leptonic_1lep/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      },
      {
       "name": "boosted2_leptonic_2lep",
-      "root_file": "/work/users/schul105/vvv/qcd_est/baseline/boosted2_leptonic_2lep/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/qcd_est/baseline/boosted2_leptonic_2lep/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      }
     ],
@@ -279,7 +279,7 @@
     "combine_cards_cmd": "combineCards.py",
     "lumi_unc": 0.016,
     "trigger_unc": 0.02,
-    "xsec_unc_json": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/combine/xsec_unc.json",
+    "xsec_unc_json": "${VVV_LEGACY}/combine/xsec_unc.json",
     "mc_stat_threshold": 10,
     "use_root_covariance": false,
     "eigen_rel_cutoff": 1e-10,
@@ -291,12 +291,12 @@
     "channels": [
      {
       "name": "boosted3",
-      "root_file": "/work/users/schul105/vvv/syst_dev/qcd_hists/boosted3/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/syst_dev/qcd_hists/boosted3/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      }
     ],
     "enabled_nuisances": [],
-    "syst_dir": "/work/users/schul105/vvv/syst_dev/syst_pass"
+    "syst_dir": "${VVV_WORK}/syst_dev/syst_pass"
    }
   },
   "systdev_res": {
@@ -305,7 +305,7 @@
     "combine_cards_cmd": "combineCards.py",
     "lumi_unc": 0.016,
     "trigger_unc": 0.02,
-    "xsec_unc_json": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/combine/xsec_unc.json",
+    "xsec_unc_json": "${VVV_LEGACY}/combine/xsec_unc.json",
     "mc_stat_threshold": 10,
     "use_root_covariance": false,
     "eigen_rel_cutoff": 1e-10,
@@ -317,12 +317,12 @@
     "channels": [
      {
       "name": "boosted2_resolved",
-      "root_file": "/work/users/schul105/vvv/syst_dev/qcd_hists/boosted2_resolved/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/syst_dev/qcd_hists/boosted2_resolved/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      }
     ],
     "enabled_nuisances": [],
-    "syst_dir": "/work/users/schul105/vvv/syst_dev/syst_pass"
+    "syst_dir": "${VVV_WORK}/syst_dev/syst_pass"
    }
   },
   "systdev_unres": {
@@ -331,7 +331,7 @@
     "combine_cards_cmd": "combineCards.py",
     "lumi_unc": 0.016,
     "trigger_unc": 0.02,
-    "xsec_unc_json": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/combine/xsec_unc.json",
+    "xsec_unc_json": "${VVV_LEGACY}/combine/xsec_unc.json",
     "mc_stat_threshold": 10,
     "use_root_covariance": false,
     "eigen_rel_cutoff": 1e-10,
@@ -343,12 +343,12 @@
     "channels": [
      {
       "name": "boosted2_unresolved",
-      "root_file": "/work/users/schul105/vvv/syst_dev/qcd_hists/boosted2_unresolved/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/syst_dev/qcd_hists/boosted2_unresolved/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      }
     ],
     "enabled_nuisances": [],
-    "syst_dir": "/work/users/schul105/vvv/syst_dev/syst_pass"
+    "syst_dir": "${VVV_WORK}/syst_dev/syst_pass"
    }
   },
   "systdev_1lep": {
@@ -357,7 +357,7 @@
     "combine_cards_cmd": "combineCards.py",
     "lumi_unc": 0.016,
     "trigger_unc": 0.02,
-    "xsec_unc_json": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/combine/xsec_unc.json",
+    "xsec_unc_json": "${VVV_LEGACY}/combine/xsec_unc.json",
     "mc_stat_threshold": 10,
     "use_root_covariance": false,
     "eigen_rel_cutoff": 1e-10,
@@ -369,12 +369,12 @@
     "channels": [
      {
       "name": "boosted2_leptonic_1lep",
-      "root_file": "/work/users/schul105/vvv/syst_dev/qcd_hists/boosted2_leptonic_1lep/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/syst_dev/qcd_hists/boosted2_leptonic_1lep/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      }
     ],
     "enabled_nuisances": [],
-    "syst_dir": "/work/users/schul105/vvv/syst_dev/syst_pass"
+    "syst_dir": "${VVV_WORK}/syst_dev/syst_pass"
    }
   },
   "systdev_2lep": {
@@ -383,7 +383,7 @@
     "combine_cards_cmd": "combineCards.py",
     "lumi_unc": 0.016,
     "trigger_unc": 0.02,
-    "xsec_unc_json": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/combine/xsec_unc.json",
+    "xsec_unc_json": "${VVV_LEGACY}/combine/xsec_unc.json",
     "mc_stat_threshold": 10,
     "use_root_covariance": false,
     "eigen_rel_cutoff": 1e-10,
@@ -395,12 +395,12 @@
     "channels": [
      {
       "name": "boosted2_leptonic_2lep",
-      "root_file": "/work/users/schul105/vvv/syst_dev/qcd_hists/boosted2_leptonic_2lep/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/syst_dev/qcd_hists/boosted2_leptonic_2lep/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      }
     ],
     "enabled_nuisances": [],
-    "syst_dir": "/work/users/schul105/vvv/syst_dev/syst_pass"
+    "syst_dir": "${VVV_WORK}/syst_dev/syst_pass"
    }
   },
   "systdev_all5": {
@@ -409,7 +409,7 @@
     "combine_cards_cmd": "combineCards.py",
     "lumi_unc": 0.016,
     "trigger_unc": 0.02,
-    "xsec_unc_json": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/combine/xsec_unc.json",
+    "xsec_unc_json": "${VVV_LEGACY}/combine/xsec_unc.json",
     "mc_stat_threshold": 10,
     "use_root_covariance": false,
     "eigen_rel_cutoff": 1e-10,
@@ -421,32 +421,32 @@
     "channels": [
      {
       "name": "boosted3",
-      "root_file": "/work/users/schul105/vvv/syst_dev/qcd_hists/boosted3/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/syst_dev/qcd_hists/boosted3/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      },
      {
       "name": "boosted2_resolved",
-      "root_file": "/work/users/schul105/vvv/syst_dev/qcd_hists/boosted2_resolved/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/syst_dev/qcd_hists/boosted2_resolved/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      },
      {
       "name": "boosted2_unresolved",
-      "root_file": "/work/users/schul105/vvv/syst_dev/qcd_hists/boosted2_unresolved/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/syst_dev/qcd_hists/boosted2_unresolved/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      },
      {
       "name": "boosted2_leptonic_1lep",
-      "root_file": "/work/users/schul105/vvv/syst_dev/qcd_hists/boosted2_leptonic_1lep/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/syst_dev/qcd_hists/boosted2_leptonic_1lep/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      },
      {
       "name": "boosted2_leptonic_2lep",
-      "root_file": "/work/users/schul105/vvv/syst_dev/qcd_hists/boosted2_leptonic_2lep/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/syst_dev/qcd_hists/boosted2_leptonic_2lep/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      }
     ],
     "enabled_nuisances": [],
-    "syst_dir": "/work/users/schul105/vvv/syst_dev/syst_pass"
+    "syst_dir": "${VVV_WORK}/syst_dev/syst_pass"
    }
   },
   "systdevmb_b3": {
@@ -455,7 +455,7 @@
     "combine_cards_cmd": "combineCards.py",
     "lumi_unc": 0.016,
     "trigger_unc": 0.02,
-    "xsec_unc_json": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/combine/xsec_unc.json",
+    "xsec_unc_json": "${VVV_LEGACY}/combine/xsec_unc.json",
     "mc_stat_threshold": 10,
     "use_root_covariance": false,
     "eigen_rel_cutoff": 1e-10,
@@ -467,12 +467,12 @@
     "channels": [
      {
       "name": "boosted3",
-      "root_file": "/work/users/schul105/vvv/syst_dev/qcd_hists/boosted3/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/syst_dev/qcd_hists/boosted3/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      }
     ],
     "enabled_nuisances": [],
-    "syst_dir": "/work/users/schul105/vvv/syst_dev/syst_pass_massbins"
+    "syst_dir": "${VVV_WORK}/syst_dev/syst_pass_massbins"
    }
   },
   "systdevmb_res": {
@@ -481,7 +481,7 @@
     "combine_cards_cmd": "combineCards.py",
     "lumi_unc": 0.016,
     "trigger_unc": 0.02,
-    "xsec_unc_json": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/combine/xsec_unc.json",
+    "xsec_unc_json": "${VVV_LEGACY}/combine/xsec_unc.json",
     "mc_stat_threshold": 10,
     "use_root_covariance": false,
     "eigen_rel_cutoff": 1e-10,
@@ -493,12 +493,12 @@
     "channels": [
      {
       "name": "boosted2_resolved",
-      "root_file": "/work/users/schul105/vvv/syst_dev/qcd_hists/boosted2_resolved/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/syst_dev/qcd_hists/boosted2_resolved/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      }
     ],
     "enabled_nuisances": [],
-    "syst_dir": "/work/users/schul105/vvv/syst_dev/syst_pass_massbins"
+    "syst_dir": "${VVV_WORK}/syst_dev/syst_pass_massbins"
    }
   },
   "systdevmb_unres": {
@@ -507,7 +507,7 @@
     "combine_cards_cmd": "combineCards.py",
     "lumi_unc": 0.016,
     "trigger_unc": 0.02,
-    "xsec_unc_json": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/combine/xsec_unc.json",
+    "xsec_unc_json": "${VVV_LEGACY}/combine/xsec_unc.json",
     "mc_stat_threshold": 10,
     "use_root_covariance": false,
     "eigen_rel_cutoff": 1e-10,
@@ -519,12 +519,12 @@
     "channels": [
      {
       "name": "boosted2_unresolved",
-      "root_file": "/work/users/schul105/vvv/syst_dev/qcd_hists/boosted2_unresolved/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/syst_dev/qcd_hists/boosted2_unresolved/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      }
     ],
     "enabled_nuisances": [],
-    "syst_dir": "/work/users/schul105/vvv/syst_dev/syst_pass_massbins"
+    "syst_dir": "${VVV_WORK}/syst_dev/syst_pass_massbins"
    }
   },
   "systdevmb_1lep": {
@@ -533,7 +533,7 @@
     "combine_cards_cmd": "combineCards.py",
     "lumi_unc": 0.016,
     "trigger_unc": 0.02,
-    "xsec_unc_json": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/combine/xsec_unc.json",
+    "xsec_unc_json": "${VVV_LEGACY}/combine/xsec_unc.json",
     "mc_stat_threshold": 10,
     "use_root_covariance": false,
     "eigen_rel_cutoff": 1e-10,
@@ -545,12 +545,12 @@
     "channels": [
      {
       "name": "boosted2_leptonic_1lep",
-      "root_file": "/work/users/schul105/vvv/syst_dev/qcd_hists/boosted2_leptonic_1lep/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/syst_dev/qcd_hists/boosted2_leptonic_1lep/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      }
     ],
     "enabled_nuisances": [],
-    "syst_dir": "/work/users/schul105/vvv/syst_dev/syst_pass_massbins"
+    "syst_dir": "${VVV_WORK}/syst_dev/syst_pass_massbins"
    }
   },
   "systdevmb_2lep": {
@@ -559,7 +559,7 @@
     "combine_cards_cmd": "combineCards.py",
     "lumi_unc": 0.016,
     "trigger_unc": 0.02,
-    "xsec_unc_json": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/combine/xsec_unc.json",
+    "xsec_unc_json": "${VVV_LEGACY}/combine/xsec_unc.json",
     "mc_stat_threshold": 10,
     "use_root_covariance": false,
     "eigen_rel_cutoff": 1e-10,
@@ -571,12 +571,12 @@
     "channels": [
      {
       "name": "boosted2_leptonic_2lep",
-      "root_file": "/work/users/schul105/vvv/syst_dev/qcd_hists/boosted2_leptonic_2lep/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/syst_dev/qcd_hists/boosted2_leptonic_2lep/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      }
     ],
     "enabled_nuisances": [],
-    "syst_dir": "/work/users/schul105/vvv/syst_dev/syst_pass_massbins"
+    "syst_dir": "${VVV_WORK}/syst_dev/syst_pass_massbins"
    }
   },
   "systdevmb_all5": {
@@ -585,7 +585,7 @@
     "combine_cards_cmd": "combineCards.py",
     "lumi_unc": 0.016,
     "trigger_unc": 0.02,
-    "xsec_unc_json": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/combine/xsec_unc.json",
+    "xsec_unc_json": "${VVV_LEGACY}/combine/xsec_unc.json",
     "mc_stat_threshold": 10,
     "use_root_covariance": false,
     "eigen_rel_cutoff": 1e-10,
@@ -597,32 +597,32 @@
     "channels": [
      {
       "name": "boosted3",
-      "root_file": "/work/users/schul105/vvv/syst_dev/qcd_hists/boosted3/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/syst_dev/qcd_hists/boosted3/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      },
      {
       "name": "boosted2_resolved",
-      "root_file": "/work/users/schul105/vvv/syst_dev/qcd_hists/boosted2_resolved/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/syst_dev/qcd_hists/boosted2_resolved/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      },
      {
       "name": "boosted2_unresolved",
-      "root_file": "/work/users/schul105/vvv/syst_dev/qcd_hists/boosted2_unresolved/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/syst_dev/qcd_hists/boosted2_unresolved/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      },
      {
       "name": "boosted2_leptonic_1lep",
-      "root_file": "/work/users/schul105/vvv/syst_dev/qcd_hists/boosted2_leptonic_1lep/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/syst_dev/qcd_hists/boosted2_leptonic_1lep/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      },
      {
       "name": "boosted2_leptonic_2lep",
-      "root_file": "/work/users/schul105/vvv/syst_dev/qcd_hists/boosted2_leptonic_2lep/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/syst_dev/qcd_hists/boosted2_leptonic_2lep/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      }
     ],
     "enabled_nuisances": [],
-    "syst_dir": "/work/users/schul105/vvv/syst_dev/syst_pass_massbins"
+    "syst_dir": "${VVV_WORK}/syst_dev/syst_pass_massbins"
    }
   },
   "systdev_b3unres1lep": {
@@ -631,7 +631,7 @@
     "combine_cards_cmd": "combineCards.py",
     "lumi_unc": 0.016,
     "trigger_unc": 0.02,
-    "xsec_unc_json": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/combine/xsec_unc.json",
+    "xsec_unc_json": "${VVV_LEGACY}/combine/xsec_unc.json",
     "mc_stat_threshold": 10,
     "use_root_covariance": false,
     "eigen_rel_cutoff": 1e-10,
@@ -643,22 +643,22 @@
     "channels": [
      {
       "name": "boosted3",
-      "root_file": "/work/users/schul105/vvv/syst_dev/qcd_hists/boosted3/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/syst_dev/qcd_hists/boosted3/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      },
      {
       "name": "boosted2_unresolved",
-      "root_file": "/work/users/schul105/vvv/syst_dev/qcd_hists/boosted2_unresolved/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/syst_dev/qcd_hists/boosted2_unresolved/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      },
      {
       "name": "boosted2_leptonic_1lep",
-      "root_file": "/work/users/schul105/vvv/syst_dev/qcd_hists/boosted2_leptonic_1lep/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/syst_dev/qcd_hists/boosted2_leptonic_1lep/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      }
     ],
     "enabled_nuisances": [],
-    "syst_dir": "/work/users/schul105/vvv/syst_dev/syst_pass"
+    "syst_dir": "${VVV_WORK}/syst_dev/syst_pass"
    }
   },
   "systdevmb_b3unres1lep": {
@@ -667,7 +667,7 @@
     "combine_cards_cmd": "combineCards.py",
     "lumi_unc": 0.016,
     "trigger_unc": 0.02,
-    "xsec_unc_json": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/combine/xsec_unc.json",
+    "xsec_unc_json": "${VVV_LEGACY}/combine/xsec_unc.json",
     "mc_stat_threshold": 10,
     "use_root_covariance": false,
     "eigen_rel_cutoff": 1e-10,
@@ -679,22 +679,22 @@
     "channels": [
      {
       "name": "boosted3",
-      "root_file": "/work/users/schul105/vvv/syst_dev/qcd_hists/boosted3/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/syst_dev/qcd_hists/boosted3/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      },
      {
       "name": "boosted2_unresolved",
-      "root_file": "/work/users/schul105/vvv/syst_dev/qcd_hists/boosted2_unresolved/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/syst_dev/qcd_hists/boosted2_unresolved/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      },
      {
       "name": "boosted2_leptonic_1lep",
-      "root_file": "/work/users/schul105/vvv/syst_dev/qcd_hists/boosted2_leptonic_1lep/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/syst_dev/qcd_hists/boosted2_leptonic_1lep/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      }
     ],
     "enabled_nuisances": [],
-    "syst_dir": "/work/users/schul105/vvv/syst_dev/syst_pass_massbins"
+    "syst_dir": "${VVV_WORK}/syst_dev/syst_pass_massbins"
    }
   },
   "synth_observed": {
@@ -703,7 +703,7 @@
     "combine_cards_cmd": "combineCards.py",
     "lumi_unc": 0.016,
     "trigger_unc": 0.02,
-    "xsec_unc_json": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/combine/xsec_unc.json",
+    "xsec_unc_json": "${VVV_LEGACY}/combine/xsec_unc.json",
     "mc_stat_threshold": 10,
     "use_root_covariance": false,
     "eigen_rel_cutoff": 1e-10,
@@ -715,12 +715,12 @@
     "channels": [
      {
       "name": "boosted3",
-      "root_file": "/work/users/schul105/vvv/qcd_est/baseline/boosted3/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/qcd_est/baseline/boosted3/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      },
      {
       "name": "boosted2_leptonic_1lep",
-      "root_file": "/work/users/schul105/vvv/qcd_est/baseline/boosted2_leptonic_1lep/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/qcd_est/baseline/boosted2_leptonic_1lep/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      }
     ],
@@ -734,7 +734,7 @@
    },
    "synthetic": {
     "boosted3": {
-     "from": "/work/users/schul105/vvv/qcd_est/baseline/boosted3/qcd_abcd_yields.root",
+     "from": "${VVV_WORK}/qcd_est/baseline/boosted3/qcd_abcd_yields.root",
      "data": {
       "seed": 1,
       "blind": [
@@ -747,7 +747,7 @@
      ]
     },
     "boosted2_leptonic_1lep": {
-     "from": "/work/users/schul105/vvv/qcd_est/baseline/boosted2_leptonic_1lep/qcd_abcd_yields.root",
+     "from": "${VVV_WORK}/qcd_est/baseline/boosted2_leptonic_1lep/qcd_abcd_yields.root",
      "data": {
       "seed": 2,
       "blind": [
@@ -764,7 +764,7 @@
     "combine_cards_cmd": "combineCards.py",
     "lumi_unc": 0.016,
     "trigger_unc": 0.02,
-    "xsec_unc_json": "/depot/cms/private/users/schul105/VVV/analysis/CMSSW_16_1_0_pre4/src/ScoutingVVVTools/combine/xsec_unc.json",
+    "xsec_unc_json": "${VVV_LEGACY}/combine/xsec_unc.json",
     "mc_stat_threshold": 10,
     "use_root_covariance": false,
     "eigen_rel_cutoff": 1e-10,
@@ -776,12 +776,12 @@
     "channels": [
      {
       "name": "boosted3",
-      "root_file": "/work/users/schul105/vvv/qcd_est/baseline/boosted3/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/qcd_est/baseline/boosted3/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      },
      {
       "name": "boosted2_resolved",
-      "root_file": "/work/users/schul105/vvv/qcd_est/baseline/boosted2_resolved/qcd_abcd_yields.root",
+      "root_file": "${VVV_WORK}/qcd_est/baseline/boosted2_resolved/qcd_abcd_yields.root",
       "registry": "configs/training/baseline.json"
      }
     ],
@@ -794,12 +794,12 @@
    },
    "synthetic": {
     "boosted3": {
-     "from": "/work/users/schul105/vvv/qcd_est/baseline/boosted3/qcd_abcd_yields.root",
+     "from": "${VVV_WORK}/qcd_est/baseline/boosted3/qcd_abcd_yields.root",
      "residual_order": 2,
      "tfmc_free": 0
     },
     "boosted2_resolved": {
-     "from": "/work/users/schul105/vvv/qcd_est/baseline/boosted2_resolved/qcd_abcd_yields.root",
+     "from": "${VVV_WORK}/qcd_est/baseline/boosted2_resolved/qcd_abcd_yields.root",
      "residual_order": 1,
      "sr_slope": [
       2,

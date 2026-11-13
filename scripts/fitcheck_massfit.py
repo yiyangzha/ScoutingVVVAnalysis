@@ -46,6 +46,7 @@ import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from vvv.paths import load_config  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[1]
 SYST_JSON_KEYS = ("theory_syst_json", "pileup_syst_json", "jes_syst_json", "jer_syst_json", "jms_syst_json",
@@ -199,7 +200,7 @@ def make_inputs(spec, out, force):
 
 def registry(spec, out, variant):
     """Stub bdt_root for combine.C: class_groups of the training config, sample_config = legacy sample.json."""
-    tcfg = json.loads((REPO / spec["variants"][variant]["training_config"]).read_text())
+    tcfg = load_config(REPO / spec["variants"][variant]["training_config"])
     d = out / "registry" / variant
     d.mkdir(parents=True, exist_ok=True)
     (d / "config.json").write_text(json.dumps({
@@ -321,7 +322,7 @@ def main():
     p.add_argument("--force", action="store_true", help="redo steps whose outputs exist")
     p.add_argument("--notes", type=Path, help="markdown appended to summary.md (interpretation, caveats)")
     args = p.parse_args()
-    spec = json.loads(args.spec.read_text())
+    spec = load_config(args.spec)
     steps = args.steps.split(",")
     out = args.out.resolve()
     out.mkdir(parents=True, exist_ok=True)
