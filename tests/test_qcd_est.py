@@ -238,7 +238,8 @@ def test_hist_setup_matches_events(tmp_path):
 
 def test_skim_setup_data_per_file_and_mc_lumi(tmp_path):
     """estimate_qcd.py --skim-dir (SkimSetup): data read file by file gives the counts of one fill, the
-    blinded pass bins stay empty, and mc_lumi rescales the MC weights from the config's lumi."""
+    blinded pass bins stay empty; with data the MC is rescaled to the data's luminosity by default, and
+    mc_lumi sets another one."""
     import pyarrow as pa
     import pyarrow.parquet as pq
 
@@ -269,6 +270,7 @@ def test_skim_setup_data_per_file_and_mc_lumi(tmp_path):
                                                      "categories": {cat: {"thresholds": {MSD: [50, 150]}}}}))
     (tmp_path / "qcd_est.json").write_text(json.dumps({"lumi": 200.0, "abcd_mode": "massfit", "massfit": {cat: mf}}))
     catalogue = {f"s_{c}": Sample(f"s_{c}", (), "signal" if c in ("VVV", "VH") else "background", 1) for c in CLASSES}
+    catalogue["data_2024"] = Sample("data_2024", (), "data", 0, lumi_fb=100.0)
 
     def run(mc_lumi):
         setup = SkimSetup(tmp_path / "qcd_est.json", tmp_path / "train.json", cat, tmp_path / "mc", tmp_path / "sr.csv",
@@ -278,8 +280,8 @@ def test_skim_setup_data_per_file_and_mc_lumi(tmp_path):
         setup.fill_data(acc, log=lambda m: None)
         return setup, acc.inputs()
 
-    setup, inp = run(None)
-    assert setup.mc_scale == 1.0 and setup.massfit.blind_window == (50.0, 150.0)
+    setup, inp = run(None)  # with data: MC at the data's luminosity (100 of the config's 200 fb^-1)
+    assert setup.mc_scale == pytest.approx(0.5) and setup.lumi == 100.0 and setup.massfit.blind_window == (50.0, 150.0)
     ref = MassfitAccumulator(setup.massfit, BOXES, CLASSES, {}, ["QCD"], (50, 150), log=lambda m: None)
     ref.fill_data(dmass.astype(np.float32), proba=dproba)
     assert np.array_equal(inp.data, ref.data)
@@ -287,6 +289,25 @@ def test_skim_setup_data_per_file_and_mc_lumi(tmp_path):
     assert inp.data[1:, ~inp.blinded].sum() > 0
     setup50, inp50 = run(50.0)
     assert setup50.mc_scale == pytest.approx(0.25) and setup50.lumi == 50.0
-    assert np.allclose(inp50.sums["s_QCD"][0], 0.25 * inp.sums["s_QCD"][0], rtol=1e-12)
-    assert np.allclose(inp50.sums["s_QCD"][1], 0.0625 * inp.sums["s_QCD"][1], rtol=1e-12)
+    assert np.allclose(inp50.sums["s_QCD"][0], 0.5 * inp.sums["s_QCD"][0], rtol=1e-12)
+    assert np.allclose(inp50.sums["s_QCD"][1], 0.25 * inp.sums["s_QCD"][1], rtol=1e-12)
     assert np.array_equal(inp50.data, inp.data)
+
+
+def test_scale_mc_keeps_data_and_counts():
+    import numpy as np
+
+    from vvv.background.qcd_massfit import MassfitInputs
+
+    sw, sw2, n = np.array([[1.0, 2.0]]), np.array([[1.0, 4.0]]), np.array([[3, 5]])
+    inp = MassfitInputs(np.array([0.0, 1.0, 2.0]), [1], ["QCD"], {"s": "QCD"}, ["QCD"],
+                        {"s": (sw, sw2, n)}, {"s": (np.array([2.0]), np.array([4.0]), np.array([1]))},
+                        {"s": [[2.0, 4.0]] * 4}, {"s": np.array([0.5, 1.5])},
+                        {"VV": (sw.copy(), sw2.copy(), n.copy())}, data=np.array([[7.0, 9.0]]))
+    inp.scale_mc(0.5)
+    assert np.allclose(inp.sums["s"][0], sw * 0.5) and np.allclose(inp.sums["s"][1], sw2 * 0.25)
+    assert np.array_equal(inp.sums["s"][2], n)
+    assert np.allclose(inp.a_sums["s"][0], [1.0]) and np.allclose(inp.a_sums["s"][1], [1.0])
+    assert inp.abcd["s"][0] == [1.0, 1.0] and np.allclose(inp.abs_w["s"], [0.25, 0.75])
+    assert np.allclose(inp.smooth["VV"][0], sw * 0.5)
+    assert np.array_equal(inp.data, np.array([[7.0, 9.0]]))

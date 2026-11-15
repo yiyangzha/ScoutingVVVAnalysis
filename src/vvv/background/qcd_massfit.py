@@ -197,6 +197,21 @@ class MassfitInputs:
     blinded: np.ndarray | None = None
     approximations: list = field(default_factory=list)
 
+    def scale_mc(self, factor):
+        """MC normalised by factor (e.g. to the data luminosity): sums x f, variances x f^2;
+        entry counts and data unchanged."""
+        f = float(factor)
+        for d in (self.sums, self.a_sums):
+            for s, (sw, sw2, n) in d.items():
+                d[s] = (sw * f, sw2 * f * f, n)
+        for s, rows in self.abcd.items():
+            self.abcd[s] = [[sw * f, sw2 * f * f] for sw, sw2 in rows]
+        for s, w in self.abs_w.items():
+            self.abs_w[s] = np.asarray(w) * f
+        for c, (sw, sw2, n) in self.smooth.items():
+            self.smooth[c] = (sw * f, sw2 * f * f, n)
+        return self
+
     @property
     def samples(self):
         return sorted(self.sample_class)

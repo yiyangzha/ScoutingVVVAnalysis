@@ -8,8 +8,9 @@ need proba_<class> columns (vvv run --model-dir, or scripts/rescore_skims.py) to
 read file by file (the boosted2_unresolved data skim has ~485M rows), the blinding being applied by
 MassfitAccumulator.fill_data to each file before anything is counted.
 
-The skim MC weights are x the config's lumi (vvv run --lumi, 255.8 fb^-1 by default); mc_lumi
-rescales them to another luminosity (e.g. the data's, for a fit to data).
+The skim MC weights are x the config's lumi (vvv run --lumi, 255.8 fb^-1 by default). With data
+(data_skim_dir) the MC is rescaled to the data's luminosity (data/samples.yaml lumi_fb), for a fit
+to data; mc_lumi sets another luminosity.
 """
 
 import json
@@ -50,6 +51,8 @@ class SkimSetup:
                 raise RuntimeError(f"massfit smooth_templates: '{c}' is not a non-QCD background class")
         self.lumi = float(raw.get("lumi", 0))  # the skim weights are already x lumi
         self.mc_scale = 1.0
+        if mc_lumi is None and data_skim_dir:  # with data: MC at the data's luminosity (a fit to data)
+            mc_lumi = float(catalogue[data_sample].lumi_fb)
         if mc_lumi is not None:
             if not self.lumi > 0:
                 raise ValueError("mc_lumi needs the config's lumi (the luminosity of the skim weights)")

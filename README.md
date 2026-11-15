@@ -466,7 +466,9 @@ Before unblinding:
 - [ ] Add Z(->nunu)+jets MC (missing in legacy too) and recheck the unresolved SR1 sideband excess;
       retrain/re-optimise if the background changes.
 - [ ] boosted3 SR4 sideband excess (data/MC ~1.7, mostly top MC): top normalisation from a control region.
-- [ ] Decide the luminosity of the data mass-fit inputs (MC at the data's 54.2 fb^-1 for a data fit).
+- [x] Data mass-fit inputs: MC at the data's luminosity (54.2 fb^-1) by default when data is included
+      (`estimate_qcd.py --data-skim-dir`, also with `--hists`; `--lumi` overrides). Final inputs:
+      `${VVV_WORK}/qcd_est/baseline_hists_data/`.
 - [ ] Decide per-mass-bin (`make_syst_yields.py --mass-fit`) vs SR-window kappas on every mass bin (legacy).
 - [ ] Phase-5 per-SR yield sync against a legacy production with the same SRs (the legacy
       theory/pileup outputs are for older SRs; JES/JER/JMS/JMR were never produced in legacy).

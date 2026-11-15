@@ -23,7 +23,7 @@ MASS_BRANCH = "ScoutingFatPFJetRecluster_msoftdrop_1"
 
 class HistSetup:
     def __init__(self, qcd_est_config, training_config, category, hists, signal_region_csv, output_dir,
-                 data_sample="data_2024", catalogue=None):
+                 data_sample="data_2024", catalogue=None, mc_lumi=None, data_skim_dir=None):
         from vvv.samples import load_samples
 
         raw = json.loads(Path(qcd_est_config).read_text())
@@ -53,6 +53,10 @@ class HistSetup:
         self.output_dir = Path(output_dir)
         self.root_file_name = raw.get("root_file_name", "qcd_abcd_yields.root")
         self.data_sample = data_sample
+        self.catalogue = catalogue
+        self.mc_lumi = mc_lumi
+        self.data_skim_dir = data_skim_dir
+        self._configs = (qcd_est_config, training_config, category)
         self.outputs = None
 
     def inputs(self, log=print):
@@ -88,6 +92,8 @@ class HistSetup:
             n = np.where(sw2 > 0, sw ** 2 / np.where(sw2 > 0, sw2, 1.0), 0.0)
             smooth[cls] = (sw, sw2, n)
         data = [self.data_sample] if self.data_sample in datasets else []
+        if self.data_skim_dir and data:
+            raise ValueError(f"{self.data_sample} is both in the histograms and in --data-skim-dir")
         inputs = MassfitInputs.from_hist(h, self.sample_class, sr_ids, self.class_names, self.qcd_classes,
                                          window=self.window, category=self.tree, data_datasets=data,
                                          blind_window=self.massfit.blind_window, smooth=smooth, log=log)
@@ -98,7 +104,33 @@ class HistSetup:
             inputs.abs_w[s] = np.zeros(0)
         if smooth:
             inputs.approximations.append("effective MC entry counts of the smoothed templates")
+        if self.data_skim_dir:
+            # data from the scored data skims (the same blinding as the skim setup: SR events in the
+            # blind window's pass bins are never counted)
+            from vvv.background.qcd_massfit import MassfitAccumulator
+            from vvv.background.skims import SkimSetup
+
+            reader = SkimSetup(*self._configs, self.data_skim_dir, self.signal_region_csv, self.output_dir,
+                               data_skim_dir=self.data_skim_dir, data_sample=self.data_sample, catalogue=self.catalogue)
+            acc = MassfitAccumulator(self.massfit, load_sr_boxes(self.signal_region_csv, self.class_names),
+                                     self.class_names, self.sample_class, self.qcd_classes, self.window, log=log)
+            if not np.allclose(acc.edges, inputs.edges):
+                raise ValueError("data skim binning differs from the histograms'")
+            reader.fill_data(acc, log=log)
+            inputs.data, inputs.blinded = acc.data, acc.blinded
+            data = [self.data_sample]
         if not data:
             log(f"  no {self.data_sample} histograms: MC only")
             self.data_sample = None
+        # With data the MC is normalised to the data's luminosity (a fit to data); mc_lumi overrides.
+        target = self.mc_lumi
+        if target is None and data:
+            target = float(self.catalogue[data[0]].lumi_fb)
+        source = out.lumi or self.lumi
+        if target is not None and abs(target - source) > 1e-9:
+            if not source > 0:
+                raise ValueError("rescaling the MC needs the luminosity of the histograms")
+            inputs.scale_mc(target / source)
+            log(f"  MC rescaled from {source:g} to {target:g} fb^-1" + (" (the data's)" if self.mc_lumi is None else ""))
+            self.lumi = target
         return inputs
