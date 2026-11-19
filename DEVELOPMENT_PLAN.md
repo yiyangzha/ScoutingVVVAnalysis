@@ -4,6 +4,11 @@ This plan covers how to build what `specification.md` specifies.
 
 The guiding rule is **validate against legacy at every stage**. The legacy chain (`convert_branch.C` and its JSON expression engine, about 15.6k unique lines of C++ and 31k lines of Python) is the reference. Each phase ends with an event-by-event or yield-level sync test, matched on (run, lumi, event). The port never becomes "the analysis" before it reproduces the legacy numbers. Differences that are *intended* fixes go in a changelog, not into tolerance knobs.
 
+## Status (2026-11-13)
+
+- The full chain runs in coffea: skims, training (Ray), SR optimisation, QCD mass-fit inputs, systematics inputs, datacards (Python port identical to combine.C) and Combine. Baseline expected Z = 2.36 (r95 = 0.86) with all nuisances, five categories, 255.8 fb^-1 (README "Baseline"). It predates the event and jet treatment of 2026-11-10 and has to be remade.
+- Blinded data is in the mass-fit inputs. Before unblinding: the boosted2_unresolved SR1 sideband excess (~4.5x, large-MET topology; no Z(->nunu)+jets MC exists) and the boosted3 SR4 excess (~1.7x, top-dominated) must be understood (README "To do").
+
 ## Status (2026-11-06)
 
 - Phase 0: done. Pixi project, schema, samples.yaml, file lists (from legacy snapshots), legacy reference = batch `www_0` of `dataset_hybrid_leptonic_jec_c`.

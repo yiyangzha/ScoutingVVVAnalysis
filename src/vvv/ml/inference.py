@@ -166,6 +166,11 @@ class CategoryModel:
     def k(self):
         return len(self.boosters)
 
+    def set_nthread(self, n):
+        """Threads per booster prediction (XGBoost's default is every core of the node)."""
+        for booster in self.boosters:
+            booster.set_param({"nthread": int(n)})
+
     def predict(self, columns, event):
         """Softmax class probabilities (n_events, 6), each event scored by its fold's model."""
         x = standardize(columns, self.features, self.clip_ranges, self.log_transform)
@@ -178,6 +183,32 @@ class CategoryModel:
                 margins = booster.predict(dmat, output_margin=True).reshape(sel.sum(), len(CLASSES))
                 proba[sel] = softmax(margins)
         return proba
+
+
+def score_table(table, model, keep=None):
+    """A skim table (pyarrow) with the out-of-fold proba_<class> columns of `model`.
+
+    Existing proba_<class> columns are replaced in place, missing ones (skims made without a
+    model, e.g. the data fit-region skims) are appended. With `keep`, the result holds only those
+    columns, in that order, followed by the proba_<class> columns; a missing `keep` column is an
+    error. The rows and their order are unchanged."""
+    import pyarrow as pa
+
+    if keep is not None:
+        missing = [c for c in keep if c not in table.column_names]
+        if missing:
+            raise KeyError(f"columns not in the skim: {missing}")
+    if table.num_rows:
+        proba = model.predict({c: table[c].to_numpy() for c in model.features}, table["event"].to_numpy())
+    else:
+        proba = np.zeros((0, len(CLASSES)))
+    if keep is not None:
+        table = table.select([c for c in keep if not c.startswith("proba_")])
+    for i, c in enumerate(CLASSES):
+        name, col = f"proba_{c}", pa.array(proba[:, i], type=pa.float64())
+        idx = table.schema.get_field_index(name)
+        table = table.set_column(idx, name, col) if idx >= 0 else table.append_column(name, col)
+    return table
 
 
 def load_signal_regions(csv_path):

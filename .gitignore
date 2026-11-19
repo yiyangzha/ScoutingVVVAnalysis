@@ -4,3 +4,4 @@ __pycache__/
 output/
 *.parquet
 *.coffea
+.ipynb_checkpoints/

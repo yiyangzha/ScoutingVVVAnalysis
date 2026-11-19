@@ -53,6 +53,13 @@ Requirements:
   `/depot/cms/private/...`), mirror it to `/work` with `scripts/sync_work_mirror.sh` and point
   `pixi_project` at the mirror. Do not re-sync the mirror while a production is running.
 
+### Storage locations in configs
+
+Configs refer to storage through `${VVV_WORK}` (default `/work/users/<user>/vvv`), `${VVV_DEPOT}`
+(`/depot/cms/users/<user>/VVV`), `${VVV_CMSSW}` (`<repo>/../CMSSW_16_1_0_pre4/src`) and
+`${VVV_LEGACY}` (`${VVV_CMSSW}/ScoutingVVVTools`); `vvv.paths.load_config` expands them, and an
+environment variable of the same name overrides a default. Ray training jobs get the resolved values.
+
 ### Data shipped in the repository
 
 - `data/samples.yaml`: the sample catalogue (names, DAS paths, cross sections, groups), imported
@@ -247,6 +254,16 @@ Both tools also have a legacy mode, which reads the legacy BDT outputs or histog
 for the closure tests below. `estimate_qcd.py` takes its events from the legacy score cache, the
 fit-region skims (`--skim-dir`) or the `vvv run` histograms (`--hists`, see below).
 
+### Datacards and Combine
+
+`scripts/write_datacards.py CONFIG [--run]` writes the `combine.C` cards and shape files from the
+same `config.json` (per-channel `qcd_abcd_yields.root` and the six `*_syst_yields.json`), and
+`scripts/run_combine.py <output_dir>/datacards.json` runs `combine.C`'s Combine commands
+(significance, AsymptoticLimits; with data the masked background-only and post-fit results).
+`scripts/sync_datacards.py configs/datacards_sync.json` checks them card for card against
+`combine.C`. `scripts/fitcheck_massfit.py SPEC` drives `combine.C` itself for quick expected
+sensitivity comparisons of input variants (e.g. `configs/fitcheck/baseline.json`).
+
 ### Systematic uncertainties and the combine.C inputs
 
 One `vvv run` pass over all MC with every category's model and SR CSV gives both the mass-fit inputs
@@ -420,41 +437,49 @@ The validations below hold for the code at 45bb03e; the later changes of
 | Data skims (fit region and 1/40 plot skim), staged drain to /depot | `scripts/drain_skims.py` | row counts against cutflow, duplicate check |
 | Systematic inputs of combine.C (theory, pileup, JES/JER/JMS/JMR `*_syst_yields.json`) from the histograms | `stats/systematics.py`, `scripts/make_syst_yields.py`, `scripts/sync_syst_yields.py` | every field (n_events aside) equal to the legacy producers' own entry functions run on the event-level skims of the same pass (2 files each of www, ttbar_semilep; 46 entries per systematic): jets and pileup to 1e-15, theory to 3e-12; read by combine.C with all nuisances enabled |
 | QCD mass-fit inputs from the histograms (`estimate_qcd.py --hists`) | `background/hists.py` | identical to `--skim-dir` on the same events (all yields, sumw2, smoothed templates to 1e-12), all 5 categories; n_entries / mean_event_weight approximated |
+| Datacard writer and Combine runs in Python (port of `combine.C`'s mass-fit cards) | `stats/datacards.py`, `stats/combine_run.py`, `scripts/write_datacards.py`, `scripts/run_combine.py`, `scripts/sync_datacards.py` | 28 cases (5 legacy production points and their combination, the coffea baseline, every nuisance, observed with blinded bins, Bernstein/constrained TF_MC/slopes): cards, shape histograms and combined cards identical to `combine.C`, Asimov Z and r95 differences exactly 0 |
+| Blinded data in the mass fit (data scored with the baseline models, SR window masked) | `scripts/rescore_skims.py`, `scripts/check_data_scores.py`, `scripts/check_blinded_massfit.py` | data scores equal a fresh `CategoryModel.predict` bit for bit; row counts equal the cutflow; blinded bins empty and flagged in every file |
+| Blinded data/MC comparisons | `validation/blinding.py`, `scripts/plot_data_mc.py` | blinding cut asserted on every data batch and on every SR histogram; unit tests at the window edges |
+| Workflow tools: BDT configuration suite (Ray, NRP/Purdue), reference transfer factors, msd sculpting check, mass-fit sensitivity check | `scripts/bdt_suite/`, `scripts/reference_tf.py`, `scripts/sculpting_check.py`, `scripts/fitcheck_massfit.py` | fit check reproduces two legacy production points' Z and r95 |
 
-### Current production (2026-11-06)
+### Baseline (2026-11-13)
 
-- data_2024 fit-region and plot skims: running on Dask Gateway.
-- Legacy-budget BDTs: resolved and unresolved done; boosted3, 1lep and 2lep training.
-- Next: MC fit-region skims with out-of-fold scores from these models.
+- Models (`configs/training/baseline.json`): boosted3, resolved and unresolved mass-decorrelated
+  (legacy budgets); 1lep and 2lep without decorrelation (QCD from MC there).
+- SRs (`configs/signal_regions/*.json`, deterministic): ABCD categories with region-independent
+  transfer factors from the loosened SR boxes (`scripts/reference_tf.py --loosen`).
+- JMS 1.049 +- 0.043, JMR 1 +- 0.52 (`data/corrections/jms_jmr_results.json`, from the coffea ttbar CR).
+- This baseline was made with the event and jet treatment before
+  [Event and jet treatment](#event-and-jet-treatment) (triggers, jet ID, lepton subtraction, JER, jet
+  veto map); its products and numbers have to be remade with the current code.
+- Expected sensitivity (`combine.C` mass fit, Asimov, 255.8 fb^-1, all nuisances): Z = 2.36,
+  r95 = 0.86 for the five categories combined (1lep 1.69, 2lep 1.03, unresolved 1.11, boosted3 0.84,
+  resolved 0.51); outputs in `${VVV_WORK}/fit/baseline/summary.md`.
+- Blinded data checks: `${VVV_WORK}/data_check/report.md` and `${VVV_WORK}/data_mc_plots/README.md`.
+  Data in the boosted2_unresolved SR1 sidebands is ~4.5x the MC prediction, in events with a
+  boosted jet against large MET; no Z(->nunu)+jets sample exists in the MC (nor in legacy).
 
 ## To do
 
-Analysis chain:
+Before unblinding:
 
-- [ ] MC fit-region skims with the legacy-budget models (`vvv run --skim-cut ... --model-dir ...`
-      for every sample).
-- [ ] SR optimisation on the coffea skims for all five categories. Unresolved needs ~68 GB in
-      cells mode, so it needs a memory reduction or a large worker.
-- [ ] Recompute the QCD transfer factors on the new SRs with `estimate_qcd.py`, then re-optimise
-      with them (the SRs are currently optimised with the legacy TFs).
-- [ ] Datacard writer in Python, replacing `combine.C` (`writeMassfitCard`). Keep the Combine
-      command structure. Sync target: identical cards and Asimov Z / limits within 1% of legacy
-      (a-priori Z 0.925, r < 2.27 at 255.8 fb^-1).
-- [x] Adapter from the histograms to the legacy `combine.C` inputs (`scripts/make_syst_yields.py`:
-      the six `*_syst_yields.json`, n_eff < 10 fallback rule; `estimate_qcd.py --hists`).
-- [ ] Full MC histogram production (`vvv run` with all five models and SR CSVs), then the syst
-      JSONs, `estimate_qcd.py --hists` and the combine.C fit with all nuisances.
+- [ ] Add Z(->nunu)+jets MC (missing in legacy too) and recheck the unresolved SR1 sideband excess;
+      retrain/re-optimise if the background changes.
+- [ ] boosted3 SR4 sideband excess (data/MC ~1.7, mostly top MC): top normalisation from a control region.
+- [ ] Decide the luminosity of the data mass-fit inputs (MC at the data's 54.2 fb^-1 for a data fit).
+- [ ] Decide per-mass-bin (`make_syst_yields.py --mass-fit`) vs SR-window kappas on every mass bin (legacy).
 - [ ] Phase-5 per-SR yield sync against a legacy production with the same SRs (the legacy
       theory/pileup outputs are for older SRs; JES/JER/JMS/JMR were never produced in legacy).
-- [ ] Decide whether the cards use per-mass-bin kappas (`make_syst_yields.py --mass-fit`) or, as the
-      legacy production, the SR-window kappa on every mass bin.
 
 Physics and validation:
 
+- [ ] Scouting-specific JECs: the AK8 JEC applied to the groomed mass puts the W peak at ~98 GeV;
+      the JMS/JMR fit window (60-140 GeV) is an interim fix.
 - [x] ttbar control-region processor and JMS/JMR fit (`vvv ttbar-cr`, `scripts/fit_jms_jmr.py`).
 - [ ] Full-statistics CR production and JMS/JMR refit after the JEC (the legacy values are stale),
       then replace `data/corrections/jms_jmr_results.json`; the refit also needs the lepton
-      subtraction, the Summer24 JER and the jet veto map of the CR.
+      subtraction, the Summer24 JER and the jet veto map of the CR. JMR is statistics-limited:
+      more data would help.
 - [ ] JMR uncertainty as a width variation of the nominal mass templates (JMAR), instead of the
       one-sided smearing.
 - [ ] JES: one correlated set of sources for AK4 and AK8 (JERC), the soft-drop mass scale defined
@@ -474,14 +499,14 @@ Physics and validation:
       stage-2 penalty is still falling at the 1496-round cap.
 - [ ] Switch from reconstructed rho to the stored branch once the next ScoutingNano production
       has it.
+- [ ] 2lep: statistics-limited training and SRs (QCD MC tiny).
 
 Infrastructure:
 
-- [ ] Remove the absolute user paths from `configs/training/*.json` (skim and model directories,
-      legacy references).
-- [ ] CI for the unit tests; a 1% smoke production on Dask Gateway.
-- [ ] Cut-over: freeze legacy at a tag and document how each legacy result is reproduced with
-      the `vvv` CLI.
+- [x] Configs without user paths (`${VVV_WORK}`, `${VVV_DEPOT}`, `${VVV_CMSSW}`, `${VVV_LEGACY}`; `vvv.paths`).
+- [x] CI for the unit tests (`.github/workflows/tests.yml`).
+- [ ] A 1% smoke production on Dask Gateway; a watchdog for Dask tasks that hang without error.
+- [ ] Cut-over: freeze legacy at a tag and document how each legacy result is reproduced with the `vvv` CLI.
 
 ## Legacy behaviours reproduced on purpose
 

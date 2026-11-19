@@ -24,7 +24,9 @@ def main():
     p.add_argument("--categories", nargs="+", required=True)
     p.add_argument("--fold", type=int, default=0)
     args = p.parse_args()
-    cfg = json.loads(args.config.read_text())
+    from vvv.paths import load_config
+
+    cfg = load_config(args.config)
     for category in args.categories:
         d = args.out / category
         if (d / "meta.json").exists():

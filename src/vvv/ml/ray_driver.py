@@ -29,7 +29,9 @@ def main():
     p.add_argument("--local", action="store_true", help="run tasks in this process on CPU (tests)")
     args = p.parse_args()
 
-    cfg = json.loads(Path(args.config).read_text())
+    from vvv.paths import load_config
+
+    cfg = load_config(args.config)
     out = Path(cfg["output_dir"])
     out.mkdir(parents=True, exist_ok=True)
     categories = args.categories or list(cfg["categories"])
