@@ -315,6 +315,8 @@ def ttbar_cr(
     max_files: int = typer.Option(None, help="use only the first N files per sample (testing)"),
     batch_files: int = typer.Option(None, help="process each sample in batches of N files, one pickle per batch; "
                                     "finished batches are skipped on a rerun"),
+    batches: str = typer.Option(None, help="with --batch-files: process only the batches START <= i < STOP "
+                                "(START:STOP; STOP is clipped to the number of batches), e.g. one Slurm array task"),
     redirector: str = typer.Option("auto", help='"auto" (EOS / global), or a prefix such as ' + XCACHE),
     metadata_dir: Path = METADATA_DIR,
     xrootd_timeout: int = 300,
@@ -326,6 +328,8 @@ def ttbar_cr(
     cutflow, the pass/fail fit histogram and the CR control distributions;
     scripts/fit_jms_jmr.py fits them.
     """
+    if batches is not None and not batch_files:
+        raise typer.BadParameter("--batches requires --batch-files")
     from coffea import processor
 
     from vvv.config import TTBAR_CR
@@ -349,19 +353,44 @@ def ttbar_cr(
                               chunksize=chunksize, maxchunks=maxchunks, skipbadfiles=True,
                               xrootdtimeout=xrootd_timeout)
     output_dir = output_dir or _work_dir() / "ttbar_cr"
+    # Batch lists and the selected batch range of every sample, checked before any processing.
+    work = {}
     for name in samples:
         files = _load_filelist(name, redirector)[:max_files]
-        batches = [files[i:i + batch_files] for i in range(0, len(files), batch_files)] if batch_files else [files]
-        for i, batch in enumerate(batches):
+        file_batches = [files[i:i + batch_files] for i in range(0, len(files), batch_files)] if batch_files else [files]
+        selected = parse_batch_range(batches, len(file_batches)) if batches is not None else range(len(file_batches))
+        work[name] = (file_batches, selected)
+    for name, (file_batches, selected) in work.items():
+        for i in selected:
             path = output_dir / name / f"b{batch_files}_{i:05d}.pkl" if batch_files else output_dir / f"{name}.pkl"
             if batch_files and path.exists():
                 continue
             # After batching, so the batch boundaries do not move (as in `run`).
-            batch, dropped = _drop_excluded(name, batch)
+            batch, dropped = _drop_excluded(name, file_batches[i])
             out = runner({name: {"files": {f: "Events" for f in batch}}}, proc, treename="Events")
             out["excluded_files"] = dropped
             _dump(out, path)
-            typer.echo(f"{name}{f' batch {i}/{len(batches)}' if batch_files else ''}: {json.dumps(out['cutflow'][name])}")
+            label = f"{name} batch {i}/{len(file_batches)}" if batch_files else name
+            typer.echo(f"{label}: {json.dumps(out['cutflow'][name])}")
+
+
+def parse_batch_range(spec: str, n_batches: int) -> range:
+    """Batch indices START <= i < STOP of a "START:STOP" spec over n_batches batches; STOP is
+    clipped to n_batches, and START < 0, STOP <= START or START >= n_batches is an error."""
+    parts = spec.split(":")
+    if len(parts) != 2:
+        raise typer.BadParameter(f"--batches {spec!r}: expected START:STOP")
+    try:
+        start, stop = int(parts[0]), int(parts[1])
+    except ValueError:
+        raise typer.BadParameter(f"--batches {spec!r}: START and STOP must be integers") from None
+    if start < 0:
+        raise typer.BadParameter(f"--batches {spec!r}: START must be >= 0")
+    if stop <= start:
+        raise typer.BadParameter(f"--batches {spec!r}: STOP must be greater than START")
+    if start >= n_batches:
+        raise typer.BadParameter(f"--batches {spec!r}: START must be below the number of batches ({n_batches})")
+    return range(start, min(stop, n_batches))
 
 
 @app.command("trigger-efficiency")

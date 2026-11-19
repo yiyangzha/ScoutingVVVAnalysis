@@ -1,8 +1,10 @@
 import awkward as ak
 import numpy as np
 import pytest
+import typer
 from coffea.nanoevents.methods import candidate
 
+from vvv.cli import app, parse_batch_range
 from vvv.config import TTBAR_CR
 from vvv.corrections.jms_fit import PassFail, edges, fit_peak, measure, model
 from vvv.processors.ttbar_cr import MU_INT_FIELDS, PROBS, _gen_value, cr_objects, cr_variables, tree_mask
@@ -108,3 +110,19 @@ def test_passfail_histogram_like_legacy():
     assert h.sumw["pass"].sum() == 4.0 and h.sumw["pass"][-1] == 2.0
     assert h.sumw["fail"].sum() == 2.0
     assert h.sumw2["pass"].sum() == 8.0
+
+
+def test_batch_range():
+    assert parse_batch_range("0:3", 10) == range(0, 3)
+    assert parse_batch_range("8:20", 10) == range(8, 10)  # STOP clipped to the number of batches
+    assert parse_batch_range("9:10", 10) == range(9, 10)
+    for spec in ("-1:3", "3:3", "4:2", "10:12", "1", "a:b", "1:2:3"):
+        with pytest.raises(typer.BadParameter):
+            parse_batch_range(spec, 10)
+
+
+def test_batches_requires_batch_files():
+    from typer.testing import CliRunner
+
+    result = CliRunner().invoke(app, ["ttbar-cr", "ttbar_semilep", "--batches", "0:2"])
+    assert result.exit_code == 2 and "--batches requires --batch-files" in result.output

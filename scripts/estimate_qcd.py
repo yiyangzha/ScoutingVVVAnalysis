@@ -14,7 +14,9 @@ the config supplies only the massfit settings and exclude_samples; --training-co
 --category the classes and the msoftdrop_1 window, --signal-region-csv the SR boxes, --output-dir
 the output; --data-skim-dir adds data, which needs proba_<class> columns). With data (--data-skim-dir,
 or data_2024 in the --hists histograms) the MC is normalised to the data's luminosity (data/samples.yaml,
-54.2 fb^-1 for data_2024), as a fit to data needs; --lumi sets another luminosity.
+54.2 fb^-1 for data_2024), as a fit to data needs; --lumi sets another luminosity. The luminosities of
+the MC and of the data are recorded in massfit/settings (mc_lumi, data_lumi) and in the summary; the
+datacard writer requires them to agree for a fit to data.
 
 With --hists the binned sums come from the nominal mass histograms of `vvv run` pickles (files or
 directories; vvv.background.hists), the same pass that feeds scripts/make_syst_yields.py; the other
@@ -139,11 +141,13 @@ def main():
         log(f"  SR{sr}: qcd_true={result['bundles']['qcd_true']['yield'][i]:.6g}, n0={result['n0'][i]:.6g}, "
             f"qcd_predict={result['bundles']['qcd_predict']['yield'][i]:.6g}")
     out_dir.mkdir(parents=True, exist_ok=True)
-    write_root(out_dir / setup.root_file_name, result, sr_csv_hash(setup.signal_region_csv), log=log)
+    write_root(out_dir / setup.root_file_name, result, sr_csv_hash(setup.signal_region_csv), setup.lumi,
+               setup.data_lumi, log=log)
     if args.plots and result["tf"] is not None:
         plot(result, out_dir, setup.branch)
     report = summary(result)
     report.update({"config": str(args.config), "tree": setup.tree, "bdt_root": str(setup.bdt_root), "lumi": setup.lumi,
+                   "data_lumi": setup.data_lumi,
                    "signal_region_csv": str(setup.signal_region_csv), "load_seconds": t_load,
                    "total_seconds": time.time() - t0,
                    "peak_rss_gb": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1e6})

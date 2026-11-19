@@ -161,7 +161,18 @@ are filled for the events that pass the fit selection of `configs/jms_jmr.json`,
 W tag. With `--skim-dir`, the whole `ttbar_cr` tree (legacy branch names, `weight`, pileup ratios)
 is also written to Parquet, so a changed fit selection needs no new pass over the NanoAOD.
 `--jet-variations` adds JES/JER up/down to the histograms. `--batch-files N` writes one
-resumable pickle per batch of files.
+resumable pickle per batch of files. `--batches START:STOP` (with `--batch-files`) processes only
+the batches START <= i < STOP of that list (STOP is clipped to the number of batches), so the
+batches of one sample can run in parallel, e.g. as a Slurm job array of 10 batches per task:
+
+```bash
+#SBATCH --array=0-39
+S=$((SLURM_ARRAY_TASK_ID * 10))
+pixi run vvv ttbar-cr ttbar_semilep --batch-files 20 --batches $S:$((S + 10)) \
+    --output-dir /work/users/$USER/vvv/ttbar_cr --skim-dir /work/users/$USER/vvv/skims_ttbar_cr
+```
+
+The batch boundaries and output names (`<sample>/b<N>_<i>.pkl`) do not depend on `--batches`.
 
 `scripts/fit_jms_jmr.py` is the port of `jms_jmr_fit.py`. It fits a Gaussian plus exponential to the
 W peak (50-120 GeV, 17 bins) of the pass region, for data and MC, and writes
@@ -261,7 +272,18 @@ same `config.json` (per-channel `qcd_abcd_yields.root` and the six `*_syst_yield
 `scripts/run_combine.py <output_dir>/datacards.json` runs `combine.C`'s Combine commands
 (significance, AsymptoticLimits; with data the masked background-only and post-fit results).
 `scripts/sync_datacards.py configs/datacards_sync.json` checks them card for card against
-`combine.C`. `scripts/fitcheck_massfit.py SPEC` drives `combine.C` itself for quick expected
+`combine.C`, after removing from the `combine.C` cards the rows the Python cards deliberately omit
+(`DELIBERATE_LEGACY_ROWS`).
+
+Differences from `combine.C`:
+
+- **Cross sections.** `xsec_<process>` lnN rows are written for the background processes only, in
+  every scenario scope; the signal process is scaled by r, which absorbs its cross section
+  (`combine.C` also writes `xsec_signal`). The theory acceptance rows are unchanged.
+- **Luminosity check.** `estimate_qcd.py` records the luminosity of the MC normalisation
+  (`massfit/settings/mc_lumi`) and, with data, the data's (`massfit/settings/data_lumi`). A channel
+  with data must have both, equal to 1e-6 relative, or the writer stops (re-run `estimate_qcd.py`);
+  `datacards.json` lists them per channel. `scripts/fitcheck_massfit.py SPEC` drives `combine.C` itself for quick expected
 sensitivity comparisons of input variants (e.g. `configs/fitcheck/baseline.json`).
 
 ### Systematic uncertainties and the combine.C inputs
@@ -437,9 +459,9 @@ The validations below hold for the code at 45bb03e; the later changes of
 | Data skims (fit region and 1/40 plot skim), staged drain to /depot | `scripts/drain_skims.py` | row counts against cutflow, duplicate check |
 | Systematic inputs of combine.C (theory, pileup, JES/JER/JMS/JMR `*_syst_yields.json`) from the histograms | `stats/systematics.py`, `scripts/make_syst_yields.py`, `scripts/sync_syst_yields.py` | every field (n_events aside) equal to the legacy producers' own entry functions run on the event-level skims of the same pass (2 files each of www, ttbar_semilep; 46 entries per systematic): jets and pileup to 1e-15, theory to 3e-12; read by combine.C with all nuisances enabled |
 | QCD mass-fit inputs from the histograms (`estimate_qcd.py --hists`) | `background/hists.py` | identical to `--skim-dir` on the same events (all yields, sumw2, smoothed templates to 1e-12), all 5 categories; n_entries / mean_event_weight approximated |
-| Datacard writer and Combine runs in Python (port of `combine.C`'s mass-fit cards) | `stats/datacards.py`, `stats/combine_run.py`, `scripts/write_datacards.py`, `scripts/run_combine.py`, `scripts/sync_datacards.py` | 28 cases (5 legacy production points and their combination, the coffea baseline, every nuisance, observed with blinded bins, Bernstein/constrained TF_MC/slopes): cards, shape histograms and combined cards identical to `combine.C`, Asimov Z and r95 differences exactly 0 |
+| Datacard writer and Combine runs in Python (port of `combine.C`'s mass-fit cards) | `stats/datacards.py`, `stats/combine_run.py`, `scripts/write_datacards.py`, `scripts/run_combine.py`, `scripts/sync_datacards.py` | 28 cases (5 legacy production points and their combination, the coffea baseline, every nuisance, observed with blinded bins, Bernstein/constrained TF_MC/slopes): cards, shape histograms and combined cards identical to `combine.C`, Asimov Z and r95 differences exactly 0 (before the signal `xsec` rows were removed on 2026-11-19; the comparison now removes them from the `combine.C` cards, and Z and r95 differ by their effect) |
 | Blinded data in the mass fit (data scored with the baseline models, SR window masked) | `scripts/rescore_skims.py`, `scripts/check_data_scores.py`, `scripts/check_blinded_massfit.py` | data scores equal a fresh `CategoryModel.predict` bit for bit; row counts equal the cutflow; blinded bins empty and flagged in every file |
-| Blinded data/MC comparisons | `validation/blinding.py`, `scripts/plot_data_mc.py` | blinding cut asserted on every data batch and on every SR histogram; unit tests at the window edges |
+| Blinded data/MC comparisons | `validation/blinding.py`, `scripts/plot_data_mc.py` | blinding cut asserted on every data batch and on every SR histogram, with the window of each category's msoftdrop_1 threshold in the training config; unit tests at the window edges |
 | Workflow tools: BDT configuration suite (Ray, NRP/Purdue), reference transfer factors, msd sculpting check, mass-fit sensitivity check | `scripts/bdt_suite/`, `scripts/reference_tf.py`, `scripts/sculpting_check.py`, `scripts/fitcheck_massfit.py` | fit check reproduces two legacy production points' Z and r95 |
 
 ### Baseline (2026-11-13)
@@ -487,7 +509,8 @@ Physics and validation:
 - [ ] JES: one correlated set of sources for AK4 and AK8 (JERC), the soft-drop mass scale defined
       together with JMS; 10 % (the HLT-JEC closure of ScoutingPFJetRecluster) until scouting JES
       sources exist.
-- [ ] Remove the cross-section uncertainty of the signal processes (scaled by r) from the cards.
+- [x] Remove the cross-section uncertainty of the signal processes (scaled by r) from the cards
+      (`xsec_<process>` rows for the backgrounds only).
 - [ ] Jet veto map: (eta, phi) occupancy of scouting AK4 jets before and after the veto, data and MC.
 - [ ] Trigger efficiencies in data with the ZeroBias reference (needs a production that keeps the
       ZeroBias events) and the data/MC scale factors.

@@ -110,7 +110,7 @@ Every histogram is a single `hist.Hist` with categorical axes `dataset`, `catego
 - Systematic list:
   - Weight-based: pileup, theory_pdf, theory_scale, theory_ps_isr, theory_ps_fsr.
   - Shape (the selection reruns on shifted objects): jes, jer, jms, jmr.
-  - lnN: lumi 1.6%, trigger 2%, xsec per process.
+  - lnN: lumi 1.6%, trigger 2%, xsec per background process (none for the signal, which is scaled by r).
   - Statistical: autoMCStats 10.
   - Background estimate: ABCD/mass-fit parameters.
 - Not applied, same as legacy: tagging, lepton and trigger SFs.

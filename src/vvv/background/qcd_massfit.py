@@ -547,10 +547,20 @@ def sideband_transfer_factors(result, signal=(50.0, 150.0), sidebands=((20.0, 50
 # --- output -----------------------------------------------------------------
 
 
-def write_root(path, result, csv_hash, log=print):
-    """qcd_abcd_yields.root as legacy write_root_output (abcd_mode massfit): the file combine.C reads."""
+def write_root(path, result, csv_hash, mc_lumi, data_lumi, log=print):
+    """qcd_abcd_yields.root as legacy write_root_output (abcd_mode massfit): the file combine.C reads.
+
+    mc_lumi: the luminosity (fb^-1) the MC is normalised to, stored as massfit/settings/mc_lumi;
+    data_lumi: the luminosity of the data, required exactly when the result has data, stored as
+    massfit/settings/data_lumi (vvv.stats.datacards requires both to agree for a fit to data)."""
     import uproot
 
+    if not mc_lumi > 0:
+        raise ValueError(f"mc_lumi must be positive (the luminosity of the MC normalisation), got {mc_lumi}")
+    if result["data"] is not None and (data_lumi is None or not data_lumi > 0):
+        raise ValueError(f"the result has data: data_lumi must be positive, got {data_lumi}")
+    if result["data"] is None and data_lumi is not None:
+        raise ValueError("data_lumi is given but the result has no data")
     sr_ids = np.asarray(result["sr_ids"], dtype=np.int32)
     cfg, edges = result["cfg"], result["edges"]
     sr_edges = np.arange(len(sr_ids) + 1, dtype=float)
@@ -590,6 +600,7 @@ def write_root(path, result, csv_hash, log=print):
                         "tfmc_free": 1.0 if cfg.tfmc_free else 0.0, "bern_low": cfg.bern_range[0],
                         "bern_high": cfg.bern_range[1], "tfmc_chi2": tf["chi2"], "tfmc_ndf": tf["ndf"],
                         "n_eig": len(tf["eig"])}
+        settings["mc_lumi"] = mc_lumi
         for key, value in settings.items():
             f[f"massfit/settings/{key}"] = (np.array([float(value)]), ONE_BIN)
         if tf is not None:
@@ -623,7 +634,7 @@ def write_root(path, result, csv_hash, log=print):
         if result["data"] is not None:
             counts, blinded = result["data"]["counts"], result["data"]["blinded"]
             low, high = cfg.blind_window
-            for key, value in (("has_data", 1.0), ("blind_low", low), ("blind_high", high)):
+            for key, value in (("has_data", 1.0), ("blind_low", low), ("blind_high", high), ("data_lumi", data_lumi)):
                 f[f"massfit/settings/{key}"] = (np.array([float(value)]), ONE_BIN)
             f["massfit/fail/data/yield"] = (np.asarray(counts[0], dtype=float), edges)
             for i, s in enumerate(sr_ids):

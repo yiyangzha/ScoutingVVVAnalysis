@@ -10,7 +10,8 @@ MassfitAccumulator.fill_data to each file before anything is counted.
 
 The skim MC weights are x the config's lumi (vvv run --lumi, 255.8 fb^-1 by default). With data
 (data_skim_dir) the MC is rescaled to the data's luminosity (data/samples.yaml lumi_fb), for a fit
-to data; mc_lumi sets another luminosity.
+to data; mc_lumi sets another luminosity. lumi (the MC's) and data_lumi (the data's, None
+without data) are recorded in the output (qcd_massfit.write_root).
 """
 
 import json
@@ -22,6 +23,14 @@ from vvv.background.qcd_massfit import MassfitAccumulator, MassfitConfig, load_s
 from vvv.ml.inference import CLASSES
 
 MASS_BRANCH = "ScoutingFatPFJetRecluster_msoftdrop_1"
+
+
+def catalogue_lumi(catalogue, sample):
+    """The luminosity (fb^-1) of a data sample of the catalogue (data/samples.yaml lumi_fb)."""
+    lumi = catalogue[sample].lumi_fb
+    if lumi is None or not lumi > 0:
+        raise ValueError(f"{sample}: no positive lumi_fb in the sample catalogue")
+    return float(lumi)
 
 
 class SkimSetup:
@@ -51,8 +60,9 @@ class SkimSetup:
                 raise RuntimeError(f"massfit smooth_templates: '{c}' is not a non-QCD background class")
         self.lumi = float(raw.get("lumi", 0))  # the skim weights are already x lumi
         self.mc_scale = 1.0
+        self.data_lumi = catalogue_lumi(catalogue, data_sample) if data_skim_dir else None
         if mc_lumi is None and data_skim_dir:  # with data: MC at the data's luminosity (a fit to data)
-            mc_lumi = float(catalogue[data_sample].lumi_fb)
+            mc_lumi = self.data_lumi
         if mc_lumi is not None:
             if not self.lumi > 0:
                 raise ValueError("mc_lumi needs the config's lumi (the luminosity of the skim weights)")

@@ -9,11 +9,13 @@ Two stages, both per category:
    <output-dir>/summary.json, and the focus study (--focus CAT:SR ...) as focus_<category>_sr<i>.pdf.
 
 Blinding (vvv.validation.blinding). A data event is never used if it is inside any SR box AND has
-50 <= msoftdrop_1 < 150 GeV. The cut is applied to every data batch right after it is read, before
-anything else (apply_blinding asserts it), and every data histogram of an SR selection is checked to
-be empty in the window again before saving and before plotting. What is shown:
+low <= msoftdrop_1 < high, [low, high] the category's msoftdrop_1 threshold in --training-config
+(50-150 GeV in the current configs). The cut is applied to every data batch right after it is read,
+before anything else (apply_blinding asserts it), and every data histogram of an SR selection is
+checked to be empty in the window again before saving and before plotting; the cache records the
+window, and plotting requires it to equal the training config's. What is shown:
   - fail region (outside every SR box): all msoftdrop_1;
-  - SR-box events, and events of any score, only in the msoftdrop_1 sidebands (< 50 or >= 150 GeV).
+  - SR-box events, and events of any score, only in the msoftdrop_1 sidebands (< low or >= high).
 
 Selections (region r: 0 = fail, i = SR box i; sb = msoftdrop_1 sideband):
   fail (r == 0), fail_sb (r == 0 & sb), sb (all r, sb), sru_sb (r > 0 & sb), sr<i>_sb (r == i & sb).
@@ -25,7 +27,7 @@ check), and per-sample MC yields and maximal weights.
 
 Caveat: the MC skims predate the JMS update (1.071 vs current 1.049); this is printed on every page.
 
-Usage: pixi run python scripts/plot_data_mc.py [--categories CAT ...] [--plot-only] [--workers 8]
+Usage: pixi run python scripts/plot_data_mc.py --skim-lumi L [--categories CAT ...] [--plot-only] [--workers 8]
            [--focus boosted2_unresolved:1 boosted3:4] [--output-dir DIR]
 """
 
@@ -144,14 +146,15 @@ def hist(idx, mask, nb, w):
     return np.bincount(i[ok], weights=wm, minlength=nb), np.bincount(i[ok], weights=wm * wm, minlength=nb)
 
 
-def fill_batch(cols, region, w, boxes, is_data):
-    """All histograms of one batch. cols: numpy columns, region from assign_regions, w None for data."""
+def fill_batch(cols, region, w, boxes, is_data, window):
+    """All histograms of one batch. cols: numpy columns, region from assign_regions, w None for data,
+    window the blind window."""
     from vvv.background.qcd_massfit import box_mask
     from vvv.validation.blinding import in_sideband
 
     m = cols[MSD]
-    sb = in_sideband(m)
-    low = sb & (m.astype(np.float64) < 50.0)
+    sb = in_sideband(m, window)
+    low = sb & (m.astype(np.float64) < window[0])
     high = sb & ~low
     sels = {"fail": region == 0, "fail_sb": (region == 0) & sb, "sb": sb, "sru_sb": (region > 0) & sb}
     for k, (sid, _) in enumerate(boxes):
@@ -220,7 +223,7 @@ def process_file(task):
 
     pa.set_cpu_count(2)
     pa.set_io_thread_count(2)
-    kind, key, path, boxes, scale = task
+    kind, key, path, boxes, scale, window = task
     columns = [MSD] + CONTROLS + PROBA
     is_data = kind == "data"
     columns += ["run", "luminosityBlock", "event"] if is_data else ["weight"]
@@ -230,15 +233,15 @@ def process_file(task):
         region = assign_regions(np.column_stack([cols[p] for p in PROBA]), boxes, list(CLASSES))
         if is_data:
             # BLINDING: first thing after reading; apply_blinding asserts the result
-            cols, region = apply_blinding(cols, region, MSD)
+            cols, region = apply_blinding(cols, region, MSD, window)
             w = None
         else:
             w = cols.pop("weight").astype(np.float64) * scale
-        part = fill_batch(cols, region, w, boxes, is_data)
+        part = fill_batch(cols, region, w, boxes, is_data, window)
         if not is_data:
             from vvv.validation.blinding import in_sideband
 
-            sbm = in_sideband(cols[MSD])
+            sbm = in_sideband(cols[MSD], window)
             masks = {"fail_sb": (region == 0) & sbm, "sb": sbm, "sru_sb": (region > 0) & sbm}
             for k, (sid, _) in enumerate(boxes):
                 masks[f"sr{sid}_sb"] = (region == k + 1) & sbm
@@ -278,11 +281,12 @@ def fill_category(cat, args):
     import pyarrow.parquet as pq
 
     from vvv.background.qcd_massfit import load_sr_boxes
-    from vvv.validation.blinding import BLIND_WINDOW
+    from vvv.validation.blinding import blind_window
 
     srcfg = json.loads((args.sr_config_dir / f"{cat}.json").read_text())
     exclude = set(srcfg.get("exclude_samples", []))
     tcfg = json.loads(args.training_config.read_text())
+    window = blind_window(tcfg, cat)
     groups = {c: [s for s in v if s not in exclude] for c, v in tcfg["class_groups"].items()}
     boxes = load_sr_boxes(args.sr_dir / cat / "signal_region.csv", list(CLASSES))
     scale = args.data_lumi / args.skim_lumi
@@ -291,12 +295,12 @@ def fill_category(cat, args):
         for s in samples:
             for f in sorted((args.mc_skim_dir / s / cat / "nominal").glob("*.parquet")):
                 if pq.ParquetFile(f).metadata.num_rows:
-                    tasks.append(("mc", (c, s), f, boxes, scale))
+                    tasks.append(("mc", (c, s), f, boxes, scale, window))
     dfiles = sorted((args.data_skim_dir / "data_2024" / cat / "nominal").glob("*.parquet"))
-    tasks += [("data", ("data", "data_2024"), f, boxes, 1.0) for f in dfiles]
+    tasks += [("data", ("data", "data_2024"), f, boxes, 1.0, window) for f in dfiles]
     tasks.sort(key=lambda t: -t[2].stat().st_size)  # big files first
     log(f"{cat}: {len(tasks) - len(dfiles)} MC files, {len(dfiles)} data files, excluded {sorted(exclude)}, "
-        f"MC x {scale:.5f}, boxes {[b[0] for b in boxes]}")
+        f"MC x {scale:.5f}, boxes {[b[0] for b in boxes]}, blind window {window}")
     mc, samples, data = {}, {}, None
     nd_in = 0
     t0 = time.time()
@@ -316,7 +320,7 @@ def fill_category(cat, args):
                 log(f"  {i + 1}/{len(tasks)} files ({time.time() - t0:.0f} s)")
     # blinding re-check on the accumulated data: SR selections empty in the window
     edges = BINS[MSD]
-    win = (edges[:-1] < BLIND_WINDOW[1]) & (edges[1:] > BLIND_WINDOW[0])
+    win = (edges[:-1] < window[1]) & (edges[1:] > window[0])
     for s, h in data["h"].items():
         if s != "fail":
             assert not h[MSD]["sw"][win].any(), f"{cat}: data in blind window for selection {s}"
@@ -324,7 +328,7 @@ def fill_category(cat, args):
         if s != "fail":
             assert not e[:, win].any()
     assert np.all(~((data["events"]["ev_region"] > 0)
-                    & (data["events"][f"ev_{MSD}"] >= 50) & (data["events"][f"ev_{MSD}"] < 150)))
+                    & (data["events"][f"ev_{MSD}"] >= window[0]) & (data["events"][f"ev_{MSD}"] < window[1])))
     # never log or store the number of rows dropped by the blinding cut: it is the blinded SR count
     log(f"{cat}: data done ({len(dfiles)} files); {time.time() - t0:.0f} s")
     flat = flatten({"mc": mc, "data": data})
@@ -336,15 +340,26 @@ def fill_category(cat, args):
     out.parent.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(out, **flat)
     meta = {"category": cat, "boxes": boxes, "exclude_samples": sorted(exclude), "mc_scale": scale,
-            "data_lumi": args.data_lumi, "skim_lumi": args.skim_lumi, "seconds": time.time() - t0}
+            "blind_window": list(window), "data_lumi": args.data_lumi, "skim_lumi": args.skim_lumi,
+            "seconds": time.time() - t0}
     (args.output_dir / "cache" / f"{cat}.json").write_text(json.dumps(meta, indent=1))
 
 
-def load_cache(cat, outdir):
+def load_cache(cat, args):
+    """The cached histograms of a category and their metadata; the blind window of the cache must be
+    the training config's (returned as meta["blind_window"])."""
+    from vvv.validation.blinding import blind_window
+
+    outdir = args.output_dir
     with np.load(outdir / "cache" / f"{cat}.npz") as z:
         d = unflatten({k: z[k] for k in z.files})
     meta = json.loads((outdir / "cache" / f"{cat}.json").read_text())
     meta["boxes"] = [(int(b[0]), {a: tuple(v) for a, v in b[1].items()}) for b in meta["boxes"]]
+    window = blind_window(json.loads(args.training_config.read_text()), cat)
+    if "blind_window" not in meta or tuple(meta["blind_window"]) != window:
+        raise RuntimeError(f"{cat}: the cache was filled with blind window {meta.get('blind_window')}, the training "
+                           f"config has {window}; re-run the fill")
+    meta["blind_window"] = window
     return d, meta
 
 
@@ -507,23 +522,20 @@ class Plotter:
         return fig
 
 
-SEL_TEXT = {"fail": "fail region (outside all SR boxes), all $m_{SD,1}$",
-            "fail_sb": "fail region, $m_{SD,1}$ sidebands",
-            "sb": "all events, $m_{SD,1}$ sidebands (<50 or $\\geq$150 GeV)",
-            "sru_sb": "union of SR boxes, $m_{SD,1}$ sidebands (<50 or $\\geq$150 GeV)"}
+def sel_text(s, window):
+    sidebands = f"$m_{{SD,1}}$ sidebands (<{window[0]:g} or $\\geq${window[1]:g} GeV)"
+    texts = {"fail": "fail region (outside all SR boxes), all $m_{SD,1}$",
+             "fail_sb": "fail region, $m_{SD,1}$ sidebands",
+             "sb": f"all events, {sidebands}",
+             "sru_sb": f"union of SR boxes, {sidebands}"}
+    return texts.get(s) or f"SR{s[2:-3]} box, {sidebands}"
 
 
-def sel_text(s):
-    return SEL_TEXT.get(s) or f"SR{s[2:-3]} box, $m_{{SD,1}}$ sidebands (<50 or $\\geq$150 GeV)"
-
-
-def yields(d, boxes):
+def yields(d, boxes, window):
     """Data/MC per region and sideband from the msd histograms (sideband bins only for SRs)."""
-    from vvv.validation.blinding import BLIND_WINDOW
-
     e = BINS[MSD]
-    parts = {"low": e[1:] <= BLIND_WINDOW[0], "window": (e[:-1] < BLIND_WINDOW[1]) & (e[1:] > BLIND_WINDOW[0]),
-             "high": e[:-1] >= BLIND_WINDOW[1]}
+    parts = {"low": e[1:] <= window[0], "window": (e[:-1] < window[1]) & (e[1:] > window[0]),
+             "high": e[:-1] >= window[1]}
     rows = []
     for s in ["fail"] + [f"sr{b[0]}_sb" for b in boxes] + ["sru_sb"]:
         row = {"region": s}
@@ -593,19 +605,18 @@ class Booklet:
 def plot_category(cat, args, summary):
     PdfPages = lambda path: Booklet(path, args.png_dir)  # noqa: E731
 
-    from vvv.validation.blinding import BLIND_WINDOW
-
-    d, meta = load_cache(cat, args.output_dir)
-    boxes = meta["boxes"]
+    d, meta = load_cache(cat, args)
+    boxes, window = meta["boxes"], meta["blind_window"]
     P = Plotter(cat, d, meta, args.data_lumi)
     e = BINS[MSD]
-    win = (e[:-1] < BLIND_WINDOW[1]) & (e[1:] > BLIND_WINDOW[0])
+    win = (e[:-1] < window[1]) & (e[1:] > window[0])
     # blinding check before any plot: no data in the window outside the fail region
     for s, h in d["data"]["h"].items():
         if s != "fail":
             assert not h[MSD]["sw"][win].any(), f"{cat} {s}: data in the blind window"
-    ys = yields(d, boxes)
+    ys = yields(d, boxes, window)
     out = {"category": cat, "mc_scale": meta["mc_scale"], "exclude_samples": meta["exclude_samples"],
+           "blind_window": list(window),
            "boxes": {f"sr{b[0]}": b[1] for b in boxes}, "yields": ys, "shapes": {}}
     sels_ctrl = ["fail", "sru_sb"]
     for s in sels_ctrl + ["sb", "fail_sb"]:
@@ -617,7 +628,8 @@ def plot_category(cat, args, summary):
         lines = [f"Data: data_2024, {args.data_lumi:.2f} fb^-1 (rescored fit-region skims, read file by file).",
                  f"MC: skims_mc_fit_baseline, weights x {meta['mc_scale']:.5f} ({args.skim_lumi} -> {args.data_lumi:.2f} fb^-1).",
                  f"Excluded samples (SR config): {', '.join(meta['exclude_samples']) or 'none'}",
-                 "Blinding: data inside any SR box with 50 <= msoftdrop_1 < 150 GeV is dropped right after reading.",
+                 f"Blinding: data inside any SR box with {window[0]:g} <= msoftdrop_1 < {window[1]:g} GeV is dropped "
+                 "right after reading.",
                  "", "SR boxes (score axis: [low, high); high = 1 means open):"]
         for sid, b in boxes:
             lines.append(f"  SR{sid}: " + ", ".join(f"{a} [{lo:g},{hi:g})" for a, (lo, hi) in b.items()))
@@ -631,7 +643,8 @@ def plot_category(cat, args, summary):
                 rr = f"{v['ratio']:.3f}+-{v['ratio_err']:.3f}" if v["ratio"] is not None else "-"
                 lines.append(f"{row['region']:10s} {p:6s} {v['data']:12.0f} {v['mc']:10.1f}+-{v['mc_stat']:<5.1f} "
                              f"{rr:>16s}   {comp}")
-        lines += ["", "low = 20-50 GeV, high = 150-250 GeV, window = 50-150 GeV (fail region only).",
+        lines += ["", f"low = {e[0]:g}-{window[0]:g} GeV, high = {window[1]:g}-{e[-1]:g} GeV, "
+                  f"window = {window[0]:g}-{window[1]:g} GeV (fail region only).",
                   "Pages: msd1 fail; msd1 per SR (sidebands); 12 controls in the fail region; 12 controls in the SR-union",
                   "sidebands; 6 BDT scores in the sidebands (all events); summary of the control-variable shapes."]
         fig = P.text_page(lines, f"{cat}: blinded data vs MC")
@@ -642,7 +655,8 @@ def plot_category(cat, args, summary):
             pdf.savefig(fig)
             plt.close(fig)
 
-        page(P.stack_plot(e, P.mc("fail", MSD), d["data"]["h"]["fail"][MSD]["sw"], sel_text("fail"), LABELS[MSD]))
+        page(P.stack_plot(e, P.mc("fail", MSD), d["data"]["h"]["fail"][MSD]["sw"], sel_text("fail", window),
+                          LABELS[MSD]))
         for sid, b in boxes:
             s = f"sr{sid}_sb"
             box = "\n".join(f"{a} in [{lo:g}, {hi:g})" for a, (lo, hi) in b.items() if not (lo == 0 and hi >= 1))
@@ -650,9 +664,10 @@ def plot_category(cat, args, summary):
                               LABELS[MSD], blinded_bins=win, logy=False, extra_text=box))
         for s in sels_ctrl:
             for v in CONTROLS:
-                page(P.stack_plot(BINS[v], P.mc(s, v), d["data"]["h"][s][v]["sw"], sel_text(s), LABELS[v]))
+                page(P.stack_plot(BINS[v], P.mc(s, v), d["data"]["h"][s][v]["sw"], sel_text(s, window), LABELS[v]))
         for v in PROBA:
-            page(P.stack_plot(BINS[v], P.mc("sb", v), d["data"]["h"]["sb"][v]["sw"], sel_text("sb"), LABELS[v]))
+            page(P.stack_plot(BINS[v], P.mc("sb", v), d["data"]["h"]["sb"][v]["sw"], sel_text("sb", window),
+                              LABELS[v]))
         # shape summary page
         lines = [f"{'variable':45s} " + "  ".join(f"{s:>30s}" for s in ("fail", "sru_sb", "sb"))]
         lines.append(f"{'':45s} " + "  ".join(f"{'data/MC  chi2/ndf  lo3  hi3':>30s}" for _ in range(3)))
@@ -683,17 +698,16 @@ def focus_study(cat, sid, args, summary):
     PdfPages = lambda path: Booklet(path, args.png_dir)  # noqa: E731
     from scipy.stats import chi2 as chi2d, poisson
 
-    from vvv.validation.blinding import BLIND_WINDOW
-
-    d, meta = load_cache(cat, args.output_dir)
+    d, meta = load_cache(cat, args)
+    window = meta["blind_window"]
     boxes = dict(meta["boxes"])
     bounds = boxes[sid]
     P = Plotter(cat, d, meta, args.data_lumi)
     plt = P.plt
     s = f"sr{sid}_sb"
     e = BINS[MSD]
-    win = (e[:-1] < BLIND_WINDOW[1]) & (e[1:] > BLIND_WINDOW[0])
-    lowb, highb = e[1:] <= BLIND_WINDOW[0], e[:-1] >= BLIND_WINDOW[1]
+    win = (e[:-1] < window[1]) & (e[1:] > window[0])
+    lowb, highb = e[1:] <= window[0], e[:-1] >= window[1]
     res = {"category": cat, "sr": sid, "box": bounds}
     # class composition and samples
     comp = {}
@@ -744,7 +758,7 @@ def focus_study(cat, sid, args, summary):
     ev = d["data"]["events"]
     k = [b for b in sorted(boxes)].index(sid) + 1
     sel = ev["ev_region"] == k
-    assert np.all((ev[f"ev_{MSD}"][sel] < 50) | (ev[f"ev_{MSD}"][sel] >= 150))
+    assert np.all((ev[f"ev_{MSD}"][sel] < window[0]) | (ev[f"ev_{MSD}"][sel] >= window[1]))
     trip = np.stack([ev["ev_run"][sel].astype(np.int64), ev["ev_luminosityBlock"][sel].astype(np.int64),
                      ev["ev_event"][sel].astype(np.int64)], axis=1)
     _, cnt = np.unique(trip, axis=0, return_counts=True)
@@ -804,7 +818,8 @@ def focus_study(cat, sid, args, summary):
             plt.close(fig)
 
         lines = [f"Box SR{sid}: " + ", ".join(f"{a} [{lo:g},{hi:g})" for a, (lo, hi) in bounds.items()),
-                 f"Data in the sidebands: low (20-50) {res['data']['low']:.0f}, high (150-250) {res['data']['high']:.0f}",
+                 f"Data in the sidebands: low ({e[0]:g}-{window[0]:g}) {res['data']['low']:.0f}, "
+                 f"high ({window[1]:g}-{e[-1]:g}) {res['data']['high']:.0f}",
                  "", "MC by class in the SR sidebands (scaled to data lumi):"]
         for c, v in comp.items():
             lines.append(f"  {c:6s} {v['sw']:9.2f} +- {v['stat']:6.2f}   raw MC entries {v['n']:8.0f}")
@@ -958,8 +973,9 @@ def summary_pdf(summary, args):
             ax.set_yticks([0.5, 1, 2, 4])
             ax.set_yticklabels(["0.5", "1", "2", "4"])
             ax.minorticks_off()
-            ax.set_title(f"{cat}  (fail: all masses; SRs: sidebands only; blue low 20-50, green window, red high 150-250)",
-                         fontsize=11)
+            lo, hi = summary[cat]["blind_window"]
+            ax.set_title(f"{cat}  (fail: all masses; SRs: sidebands only; blue low {BINS[MSD][0]:g}-{lo:g}, "
+                         f"green window, red high {hi:g}-{BINS[MSD][-1]:g})", fontsize=11)
         fig.suptitle(f"Data/MC overview, {args.data_lumi:.1f} fb$^{{-1}}$. Caveat: {JMS_CAVEAT}", fontsize=13)
         fig.tight_layout()
         pdf.savefig(fig)
@@ -993,20 +1009,25 @@ def summary_pdf(summary, args):
 
 
 def main():
+    from vvv.paths import expand
+
+    def location(text):
+        return Path(expand(text))
+
     p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     p.add_argument("--categories", nargs="*", default=list(CATEGORIES))
     p.add_argument("--plot-only", action="store_true", help="skip filling; use <output-dir>/cache")
     p.add_argument("--fill-only", action="store_true")
     p.add_argument("--workers", type=int, default=8, help="processes (2 Arrow threads each)")
     p.add_argument("--focus", nargs="*", default=["boosted2_unresolved:1", "boosted3:4"])
-    p.add_argument("--mc-skim-dir", type=Path, default=Path("/depot/cms/users/schul105/VVV/skims_mc_fit_baseline"))
-    p.add_argument("--data-skim-dir", type=Path, default=Path("/depot/cms/users/schul105/VVV/skims_data_baseline"))
-    p.add_argument("--sr-dir", type=Path, default=Path("/work/users/schul105/vvv/sr/baseline"))
+    p.add_argument("--mc-skim-dir", type=location, default="${VVV_DEPOT}/skims_mc_fit_baseline")
+    p.add_argument("--data-skim-dir", type=location, default="${VVV_DEPOT}/skims_data_baseline")
+    p.add_argument("--sr-dir", type=location, default="${VVV_WORK}/sr/baseline")
     p.add_argument("--sr-config-dir", type=Path, default=Path("configs/signal_regions"))
     p.add_argument("--training-config", type=Path, default=Path("configs/training/baseline.json"))
     p.add_argument("--data-lumi", type=float, default=None, help="default: data_2024 lumi_fb of data/samples.yaml")
-    p.add_argument("--skim-lumi", type=float, default=255.8)
-    p.add_argument("--output-dir", type=Path, default=Path("/work/users/schul105/vvv/data_mc_plots"))
+    p.add_argument("--skim-lumi", type=float, required=True, help="fb^-1 of the MC skim weights (vvv run --lumi)")
+    p.add_argument("--output-dir", type=location, default="${VVV_WORK}/data_mc_plots")
     p.add_argument("--png", action="store_true", help="also write every page as PNG to <output-dir>/png")
     args = p.parse_args()
     args.png_dir = args.output_dir / "png" if args.png else None

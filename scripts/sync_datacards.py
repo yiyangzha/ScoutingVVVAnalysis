@@ -22,6 +22,16 @@ Per case, in OUT/<case>/:
   numbers compared exactly), every shape ROOT file histogram by histogram (names, contents, errors), the
   combined datacard.txt, and the CSVs (Z, r95 quantiles).
 
+Deliberate differences of the Python cards from combine.C (DELIBERATE_LEGACY_ROWS), removed from the
+combine.C cards and combined datacard.txt before the comparison (with the kmax count of combineCards.py
+lowered by the rows removed):
+- xsec_signal: no cross-section uncertainty of the signal process, which is scaled by r.
+The Combine results (CSVs) include these rows on the combine.C side only, so Z and r95 differ by their
+effect; the CSV comparison reports the differences.
+
+A synthetic data input records data_lumi = the source's mc_lumi (the data is drawn from the MC at its
+luminosity); a source without massfit/settings/mc_lumi is an error (re-run estimate_qcd.py).
+
 Writes OUT/sync.json and OUT/sync.md.
 
 Usage: pixi run python scripts/sync_datacards.py SPEC --out DIR [--steps build,synthetic,legacy,python,compare]
@@ -54,6 +64,8 @@ STEPS = ("build", "synthetic", "legacy", "python", "compare")
 SYST_JSON_KEYS = ("theory_syst_json", "pileup_syst_json", "jes_syst_json", "jer_syst_json", "jms_syst_json",
                   "jmr_syst_json")
 ALL_SCOPES = ["combined", "class", "sample"]
+# Card rows combine.C writes and the Python writer deliberately does not (see the module docstring).
+DELIBERATE_LEGACY_ROWS = ("xsec_signal",)
 
 
 def log(message):
@@ -113,6 +125,8 @@ def synthetic_root(src, dst, mod):
         n_bins = len(edges) - 1
         new = {}
         if "data" in mod:
+            if "mc_lumi" not in settings:
+                raise ValueError(f"{src}: no massfit/settings/mc_lumi for the data luminosity; re-run estimate_qcd.py")
             rng = np.random.default_rng(mod["data"]["seed"])
             lo, hi = mod["data"]["blind"]
             blinded = (edges[:-1] < hi) & (edges[1:] > lo)
@@ -130,7 +144,8 @@ def synthetic_root(src, dst, mod):
                     s = sr_ids[region - 1]
                     new[f"massfit/pass/data/sr{s}/yield"] = (counts, edges)
                     new[f"massfit/blinded/sr{s}"] = (blinded.astype(float), edges)
-            for key, value in (("has_data", 1.0), ("blind_low", lo), ("blind_high", hi)):
+            for key, value in (("has_data", 1.0), ("blind_low", lo), ("blind_high", hi),
+                               ("data_lumi", settings["mc_lumi"])):
                 new[f"massfit/settings/{key}"] = (np.array([float(value)]), one)
         if "sr_slope" in mod:
             new["massfit/sr_slope"] = (np.array([1.0 if int(s) in mod["sr_slope"] else 0.0 for s in sr_ids]),
@@ -236,8 +251,18 @@ def _same_token(a, b):
         return False
 
 
+def drop_deliberate_rows(lines):
+    """Card token lines of combine.C without the DELIBERATE_LEGACY_ROWS, the kmax count (combineCards.py)
+    lowered by the rows removed."""
+    kept = [line for line in lines if not (line and line[0] in DELIBERATE_LEGACY_ROWS)]
+    removed = len(lines) - len(kept)
+    return [["kmax", str(int(line[1]) - removed)] + line[2:] if line[:1] == ["kmax"] and line[1].isdigit() else line
+            for line in kept]
+
+
 def compare_cards(a, b, wa, wb):
-    ta, tb = _tokens(a, wa), _tokens(b, wb)
+    """a: the combine.C card (deliberate differences removed), b: the Python card."""
+    ta, tb = drop_deliberate_rows(_tokens(a, wa)), _tokens(b, wb)
     if len(ta) != len(tb):
         return {"identical": False, "detail": f"{len(ta)} vs {len(tb)} lines"}
     text_identical = True

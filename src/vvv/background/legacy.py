@@ -4,7 +4,8 @@ As legacy qcd_est.py with a k-fold bdt_root: the MC events of every class_groups
 <bdt_root>/kfold_scores/<sample>.npz passing every fold0/selection.json threshold but the ABCD
 branch's (sentinel < -990 fails), weight = cached weight x lumi, out-of-fold proba; the samples of
 exclude_samples are not read (legacy reads and drops them: zero bundles either way). Data
-(data_sample) from <bdt_root>/kfold_scores/<sample>/*.npz with the same thresholds. A class is QCD
+(data_sample) from <bdt_root>/kfold_scores/<sample>/*.npz with the same thresholds; its luminosity
+(data_lumi) is the data sample's lumi in the sample config, the MC's the config's lumi. A class is QCD
 if its name contains "qcd". Samples are read one at a time into a MassfitAccumulator.
 
 Deliberate simplifications: relative paths in the config resolve against the config's directory
@@ -71,6 +72,7 @@ class LegacySetup:
     exclude: set
     massfit: MassfitConfig
     data_sample: str | None
+    data_lumi: float | None
     signal_region_csv: Path
     output_dir: Path
     root_file_name: str
@@ -121,14 +123,19 @@ class LegacySetup:
             if c not in groups or c in qcd or all(info[s]["is_signal"] for s in groups[c]):
                 raise RuntimeError(f"massfit smooth_templates: '{c}' is not a non-QCD background class")
         data_sample = raw.get("data_sample")
+        data_lumi = None
         if data_sample is not None:
             if data_sample not in info or info[data_sample]["is_MC"]:
                 raise RuntimeError(f"data_sample '{data_sample}' is not a data sample of the sample config")
             if massfit.blind_window is None:
                 raise RuntimeError("data_sample needs massfit blind_window")
+            data_lumi = info[data_sample].get("lumi")
+            if not isinstance(data_lumi, (int, float)) or not data_lumi > 0:
+                raise RuntimeError(f"data_sample '{data_sample}' has no positive lumi in the sample config")
+            data_lumi = float(data_lumi)
         return cls(raw, float(raw["lumi"]), bdt_root, tree, k, tcfg, branch, window,
                    {b: c for b, c in thresholds.items() if b != branch}, class_names, groups, qcd, sample_class,
-                   {s for s in sample_class if info[s]["is_signal"]}, exclude, massfit, data_sample,
+                   {s for s in sample_class if info[s]["is_signal"]}, exclude, massfit, data_sample, data_lumi,
                    res(raw["signal_region_csv"]), res(raw.get("output_dir", "./output")),
                    raw.get("root_file_name", "qcd_abcd_yields.root"))
 

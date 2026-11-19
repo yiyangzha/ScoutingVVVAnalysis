@@ -13,13 +13,17 @@ Ported (every channel type of the current production, all qcd_est.py abcd_mode '
   every mass bin; the fitted QCD (qcdF_* rateParams in the fail bins, the formula rateParam
   qcdF x n_sr x exp(TF_MC eigen-shifts) x Bernstein residual [x exp(x slope)] in the pass bins);
   smoothed pass templates with their mcnorm_* rows;
-- the nuisances: lumi, trigger, xsec_<process>, the per-sample-sums lnN rows (theory_pdf,
-  theory_scale_<process>, theory_ps_isr/fsr, pileup, jes, jer, jms, jmr) from the six *_syst_yields.json
-  with the merged-process kappas and the min_region_events (n_eff) fallback chain, autoMCStats;
+- the nuisances: lumi, trigger, xsec_<process> (background processes only, see below), the
+  per-sample-sums lnN rows (theory_pdf, theory_scale_<process>, theory_ps_isr/fsr, pileup, jes, jer,
+  jms, jmr) from the six *_syst_yields.json with the merged-process kappas and the min_region_events
+  (n_eff) fallback chain, autoMCStats;
 - the class registry (bdt_root/config.json class_groups in std::map order, the union of the channels'
   members), the scenarios (combined, signal classes, signal samples) and the QCD modes (mc: QCD from MC,
   abcd: fitted QCD), the channel scenarios (every channel alone), process naming, zero-signal channels;
 - data_mode observed: data_obs = the data, the blinded pass bins named for masking in the combined card.
+
+Beyond combine.C: a channel with data must record the luminosities of the MC normalisation and of the
+data (massfit/settings/mc_lumi and data_lumi, written by estimate_qcd.py), and they must agree.
 
 Not ported: the one-bin-per-SR cards of writeChannelDatacard (the ABCD union and per-SR ABCD
 qcd_abcd_yields.root, use_root_covariance eigen-modes, zero-count gmN floors). No production point
@@ -29,8 +33,9 @@ rescale_shape_modes_to_positive act only there; they are read and recorded but c
 Numbers follow combine.C bit by bit where they can: JSON numbers are parsed as long double and rounded
 to double (simple_json), JSON objects iterate in sorted key order (std::map), sums run in the same
 order, and the card values are printed as in C++ (%.6f for lnN kappas, %.10g for the rateParam
-formulas). The cards differ from combine.C's only in the first comment line and in the absolute path
-of the shape file.
+formulas). The cards differ from combine.C's in the first comment line, in the absolute path of the
+shape file, and by one deliberate difference: no xsec_<process> row for the signal process (combine.C
+writes one; the signal strength r absorbs the signal cross section).
 """
 
 import json
@@ -479,6 +484,8 @@ class MassfitData:
     qcd_true: list = field(default_factory=list)
     smooth: dict = field(default_factory=dict)  # slugified class -> per SR (yields, sumw2) of the loosened box
     has_data: bool = False
+    mc_lumi: float | None = None  # massfit/settings/mc_lumi: fb^-1 of the MC normalisation
+    data_lumi: float | None = None  # massfit/settings/data_lumi: fb^-1 of the data
     data: list = field(default_factory=list)  # [region][mass bin]
     blinded: list = field(default_factory=list)  # [SR][mass bin]
 
@@ -685,8 +692,20 @@ def load_channel(spec, registry, log=log_message):
             log(f"  channel '{spec.name}': smoothed pass templates of class '{g}' "
                 f"(SR boxes loosened by {_one_bin(f, sd + '/factor'):g})")
         mf.qcd_true = _mass_regions(f, "qcd_true", sr_ids, mf.n_bins)
+        if _get(f, "massfit/settings/mc_lumi") is not None:
+            mf.mc_lumi = _one_bin(f, "massfit/settings/mc_lumi")
+        if _get(f, "massfit/settings/data_lumi") is not None:
+            mf.data_lumi = _one_bin(f, "massfit/settings/data_lumi")
         if _get(f, "massfit/settings/has_data") is not None and _one_bin(f, "massfit/settings/has_data") == 1.0:
             mf.has_data = True
+            # A fit to data needs the MC at the data's luminosity.
+            if mf.mc_lumi is None or mf.data_lumi is None:
+                raise CardError(f"Channel '{spec.name}' has data but {spec.root_file} records no massfit/settings/"
+                                "mc_lumi and data_lumi; re-run estimate_qcd.py")
+            if abs(mf.mc_lumi - mf.data_lumi) > 1e-6 * abs(mf.data_lumi):
+                raise CardError(f"Channel '{spec.name}': the MC is normalised to {mf.mc_lumi:g} fb^-1 but the data has "
+                                f"{mf.data_lumi:g} fb^-1 in {spec.root_file}; re-run estimate_qcd.py with the MC at the "
+                                "data luminosity")
             mf.data.append(_contents(f, "massfit/fail/data/yield", mf.n_bins))
             for i in sr_ids:
                 mf.data.append(_contents(f, f"massfit/pass/data/sr{i}/yield", mf.n_bins))
@@ -711,7 +730,9 @@ def load_channel(spec, registry, log=log_message):
             f"pass/fail mass fit, {len(mf.eig)} TF_MC shape parameters "
             f"({'free' if mf.tfmc_free else 'constrained'}), residual order {mf.residual_order}")
     log(f"  channel '{spec.name}': {mode}, {mf.n_bins} mass bins, n_sr={n_sr}, sr_ids={sr_ids}, "
-        f"samples={len(samples)}, groups={len(groups)}" + (", data" if mf.has_data else ""))
+        f"samples={len(samples)}, groups={len(groups)}"
+        + (f", MC at {mf.mc_lumi:g} fb^-1" if mf.mc_lumi is not None else "")
+        + (f", data ({mf.data_lumi:g} fb^-1)" if mf.has_data else ""))
     return ch
 
 
@@ -1114,7 +1135,8 @@ def massfit_card_text(cfg, reg, ch, procs, bins, shape_path, fit_qcd, log=log_me
             kappa = fixed6(1.0 + unc)
             row(name, "lnN", lambda b, e, k=kappa: k if pass_mc(b, e) else "-")
     if cfg.enabled("xsec"):
-        for p, proc in enumerate(procs):
+        # Background processes only: the signal (process 0) is scaled by r, which absorbs its cross section.
+        for p, proc in enumerate(procs[1:], start=1):
             if not proc.member_samples:
                 continue
 
@@ -1394,7 +1416,8 @@ def write_all(cfg, log=log_message):
     manifest = {
         "config": cfg.path, "output_dir": cfg.output_dir, "work_dir": cfg.work_dir, "data_mode": cfg.data_mode,
         "combine_cmd": cfg.combine_cmd, "combine_cards_cmd": cfg.combine_cards_cmd, "keep_work": cfg.keep_work,
-        "channels": [{"name": c.name, "root_file": c.root_file, "bdt_root": c.bdt_root} for c in cfg.channels],
+        "channels": [{"name": c.name, "root_file": c.root_file, "bdt_root": c.bdt_root, "mc_lumi": ch.massfit.mc_lumi,
+                      "data_lumi": ch.massfit.data_lumi} for c, ch in zip(cfg.channels, channels)],
         "enabled_nuisances": sorted(cfg.enabled_nuisances), "syst_inputs": cfg.inputs,
         "ignored_settings": {"eigen_rel_cutoff": cfg.eigen_rel_cutoff,
                              "rescale_shape_modes_to_positive": cfg.rescale_shape_modes_to_positive},

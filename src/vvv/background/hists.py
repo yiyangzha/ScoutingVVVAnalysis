@@ -7,7 +7,9 @@ binned sums from the nominal mass[dataset, category, region, syst, mass] histogr
 that feeds scripts/make_syst_yields.py (MassfitInputs.from_hist). The smoothed templates
 (massfit smooth_templates {class: f}) come from mass_smooth[dataset, category, factor, region, mass],
 filled by `vvv run` for the loosening factors given with --smooth-factor (default 2). Data
-(data_sample) is used when the histograms hold it.
+(data_sample) is used when the histograms hold it. After inputs(), lumi is the luminosity the MC
+is normalised to and data_lumi the data's (None without data), recorded in the output
+(qcd_massfit.write_root).
 """
 
 import json
@@ -46,7 +48,7 @@ class HistSetup:
             if c not in self.class_groups or c in self.qcd_classes or all(
                     catalogue[s].kind == "signal" for s in self.class_groups[c]):
                 raise RuntimeError(f"massfit smooth_templates: '{c}' is not a non-QCD background class")
-        self.lumi = float(raw.get("lumi", 0))  # informational: the histograms are already x lumi
+        self.lumi = float(raw.get("lumi", 0))  # the config's; inputs() sets the luminosity of the MC it returns
         self.hist_paths = [Path(h) for h in hists]
         self.bdt_root = self.hist_paths[0]
         self.signal_region_csv = Path(signal_region_csv)
@@ -55,6 +57,7 @@ class HistSetup:
         self.data_sample = data_sample
         self.catalogue = catalogue
         self.mc_lumi = mc_lumi
+        self.data_lumi = None
         self.data_skim_dir = data_skim_dir
         self._configs = (qcd_est_config, training_config, category)
         self.outputs = None
@@ -123,13 +126,18 @@ class HistSetup:
             log(f"  no {self.data_sample} histograms: MC only")
             self.data_sample = None
         # With data the MC is normalised to the data's luminosity (a fit to data); mc_lumi overrides.
+        from vvv.background.skims import catalogue_lumi
+
+        self.data_lumi = catalogue_lumi(self.catalogue, data[0]) if data else None
         target = self.mc_lumi
         if target is None and data:
-            target = float(self.catalogue[data[0]].lumi_fb)
+            target = self.data_lumi
         source = out.lumi or self.lumi
+        if not source > 0:
+            raise ValueError("the luminosity of the histograms is unknown (no lumi_fb in the pickles, no lumi in "
+                             "the qcd_est config)")
+        self.lumi = source
         if target is not None and abs(target - source) > 1e-9:
-            if not source > 0:
-                raise ValueError("rescaling the MC needs the luminosity of the histograms")
             inputs.scale_mc(target / source)
             log(f"  MC rescaled from {source:g} to {target:g} fb^-1" + (" (the data's)" if self.mc_lumi is None else ""))
             self.lumi = target

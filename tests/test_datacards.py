@@ -28,8 +28,9 @@ def _mass(sample, region):
     return np.array(base) * scale
 
 
-def make_inputs(tmp_path, qcd_from_mc=False, data=False, smooth=False, sr_slope=False, residual_order=0):
-    """qcd_abcd_yields.root with 2 SRs and 3 mass bins, a registry stub and a sample.json."""
+def make_inputs(tmp_path, qcd_from_mc=False, data=False, smooth=False, sr_slope=False, residual_order=0, lumis=None):
+    """qcd_abcd_yields.root with 2 SRs and 3 mass bins, a registry stub and a sample.json; lumis: extra
+    massfit/settings entries (mc_lumi, data_lumi)."""
     root = tmp_path / "qcd_abcd_yields.root"
     sr_ids = np.array([1, 2], dtype=np.int32)
     groups = {"vvv": ["sigA", "sigB"], "qcd": ["qcd1"], "top": ["top1", "top2"]}
@@ -76,7 +77,7 @@ def make_inputs(tmp_path, qcd_from_mc=False, data=False, smooth=False, sr_slope=
             f["massfit/tfmc/n0"] = (np.array([1.0, 0.5]), np.arange(3.0))
             if sr_slope:
                 f["massfit/sr_slope"] = (np.array([0.0, 1.0]), np.arange(3.0))
-        for k, v in settings.items():
+        for k, v in {**settings, **(lumis or {})}.items():
             f[f"massfit/settings/{k}"] = (np.array([v]), ONE)
         if smooth:
             f["massfit/smooth/top/factor"] = (np.array([2.0]), ONE)
@@ -227,7 +228,7 @@ def test_fitted_qcd_card(tmp_path):
     assert cell(lines, "lumi", "cat_fail_m00", "bkg_top") == "-"  # no MC-normalisation rows in the fail bins
     assert [cell(lines, "lumi", "cat_sr1_m00", p) for p in ("signal", "bkg_qcd", "bkg_top")] == [
         "1.016000", "-", "1.016000"]
-    assert cell(lines, "xsec_signal", "cat_sr1_m00", "signal") == "1.100000"
+    assert "xsec_signal" not in [line.split()[0] for line in lines]  # the signal is scaled by r
     assert "xsec_bkg_qcd" not in [line.split()[0] for line in lines]
     assert "* autoMCStats 10" in lines
     assert "n_cat_sr1 extArg 1 [0,100]" in lines and "n_cat_sr2_slope extArg 0 [-10,10]" in lines
@@ -253,9 +254,11 @@ def test_fitted_qcd_card(tmp_path):
 
 
 def test_qcd_from_mc_smooth_and_observed(tmp_path):
-    root, reg = make_inputs(tmp_path, qcd_from_mc=True, smooth=True, data=True)
+    root, reg = make_inputs(tmp_path, qcd_from_mc=True, smooth=True, data=True,
+                            lumis={"mc_lumi": 54.2, "data_lumi": 54.2})
     cfg = make_config(tmp_path, root, reg, data_mode="observed", scenario_scopes=["combined", "sample"])
     m = write_all(load_config(cfg, log=lambda m: None), log=lambda m: None)
+    assert m["channels"][0]["mc_lumi"] == 54.2 and m["channels"][0]["data_lumi"] == 54.2
     lines, run = card(m, "abcd_combined_combined")
     bins = lines[7].split()[1:]
     assert bins == [f"cat_sr{s}_m{j:02d}" for s in (1, 2) for j in range(3)]  # pass bins only
@@ -274,12 +277,47 @@ def test_qcd_from_mc_smooth_and_observed(tmp_path):
     lines, _ = card(m, "abcd_sample_siga")
     assert lines[11].split()[1:4] == ["signal", "bkg_qcd1", "bkg_top1"]
     assert "bkg_sigb" in lines[11].split()
+    assert cell(lines, "xsec_bkg_sigb", "cat_sr1_m01", "bkg_sigb") == "1.100000"  # another signal sample: a background
+    assert "xsec_signal" not in [line.split()[0] for line in lines]
     assert "mcnorm" not in "\n".join(lines)  # single samples keep their box templates
     cmds = dict(combine_commands(m, run))
     assert "--channel-masks" in cmds["postfit_fit"] and "mask_ch1_cat_sr1_m01=1" in cmds["postfit_fit"]
     assert cmds["significance"].endswith("-M Significance -t -1 --expectSignal 1 -m 120 --rMin -5 --rMax 10 "
                                          "--cminDefaultMinimizerStrategy 0 --setParameters 'rgx{zc_.*}=0' -n "
                                          "'sig_abcd_combined_combined' 'datacard.txt'")
+
+
+def test_xsec_rows_backgrounds_only(tmp_path):
+    root, reg = make_inputs(tmp_path, qcd_from_mc=True)
+    cfg = make_config(tmp_path, root, reg, scenario_scopes=["combined", "class", "sample"])
+    m = write_all(load_config(cfg, log=lambda m: None), log=lambda m: None)
+    scopes = set()
+    for run in m["runs"]:
+        lines = open(run["cards"][0]).read().splitlines()
+        names = [line.split()[0] for line in lines if line.split()]
+        assert "xsec_signal" not in names and any(n.startswith("xsec_bkg_top") for n in names)
+        scopes.add(run["scope"])
+    assert scopes == {"combined", "class", "sample"}
+
+
+def test_data_luminosity_check(tmp_path):
+    def channel(lumis, data):
+        d = tmp_path / f"case{len(list(tmp_path.iterdir()))}"
+        d.mkdir()
+        root, reg = make_inputs(d, qcd_from_mc=True, data=data, lumis=lumis)
+        return load_config(make_config(d, root, reg), log=lambda m: None)
+
+    with pytest.raises(CardError, match="the MC is normalised to 255.8 fb\\^-1 but the data has 54.2"):
+        write_all(channel({"mc_lumi": 255.8, "data_lumi": 54.2}, True), log=lambda m: None)
+    with pytest.raises(CardError, match="re-run estimate_qcd.py"):
+        write_all(channel({"mc_lumi": 54.2}, True), log=lambda m: None)
+    with pytest.raises(CardError, match="re-run estimate_qcd.py"):
+        write_all(channel(None, True), log=lambda m: None)
+    m = write_all(channel({"mc_lumi": 54.2, "data_lumi": 54.2 * (1 + 1e-9)}, True), log=lambda m: None)
+    assert {r["status"] for r in m["runs"]} == {"ok"}
+    # Asimov inputs without data need no luminosities
+    m = write_all(channel(None, False), log=lambda m: None)
+    assert {r["status"] for r in m["runs"]} == {"ok"} and m["channels"][0]["mc_lumi"] is None
 
 
 def test_syst_rows_window_and_errors(tmp_path):

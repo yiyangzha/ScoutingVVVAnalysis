@@ -113,8 +113,13 @@ def test_qcd_from_mc_and_data_blinding(tmp_path):
     csv = tmp_path / "sr.csv"
     csv.write_text("bin_index,VVV_low,VVV_high\n1,0.5,1.0\n2,0.2,0.5\n")
     path = tmp_path / "out.root"
-    write_root(path, res, sr_csv_hash(csv), log=lambda m: None)
+    with pytest.raises(ValueError, match="data_lumi must be positive"):
+        write_root(path, res, sr_csv_hash(csv), 54.2, None, log=lambda m: None)
+    with pytest.raises(ValueError, match="mc_lumi must be positive"):
+        write_root(path, res, sr_csv_hash(csv), 0.0, 54.2, log=lambda m: None)
+    write_root(path, res, sr_csv_hash(csv), 54.2, 54.2, log=lambda m: None)
     with uproot.open(path) as f:
+        assert f["massfit/settings/mc_lumi"].values()[0] == 54.2 and f["massfit/settings/data_lumi"].values()[0] == 54.2
         assert f.classname_of("metadata/signal_regions") == "TTree"  # combine.C cannot read an RNTuple
         assert f["metadata/signal_regions"]["bin_index"].array(library="np").tolist() == [1, 2]
         assert f["massfit/settings/qcd_from_mc"].values()[0] == 1.0 and "massfit/tfmc" not in f
@@ -158,7 +163,8 @@ def test_legacy_loader(tmp_path):
     (bdt / "train.py").write_text("")
     groups = {c: [f"s_{c}"] for c in CLASSES}
     (bdt / "sample.json").write_text(json.dumps({"sample": [
-        {"name": f"s_{c}", "is_signal": c in ("VVV", "VH"), "is_MC": True} for c in CLASSES]}))
+        {"name": f"s_{c}", "is_signal": c in ("VVV", "VH"), "is_MC": True} for c in CLASSES]
+        + [{"name": "data_x", "is_signal": False, "is_MC": False, "lumi": 54.2}]}))
     (root / "fold0" / "test_ranges.json").write_text(json.dumps({"tree_name": "cat", "kfold": 2}))
     (root / "fold0" / "config.json").write_text(json.dumps({"class_groups": groups, "sample_config": "sample.json"}))
     (root / "fold0" / "selection.json").write_text(json.dumps({"cat": {"thresholds": {MSD: [50, 150], "pt": [175, None]}}}))
@@ -178,6 +184,8 @@ def test_legacy_loader(tmp_path):
     (tmp_path / "qcd_est.json").write_text(json.dumps(cfg))
     setup = LegacySetup.load(tmp_path / "qcd_est.json")
     assert setup.window == (50, 150) and setup.massfit.blind_window == (50.0, 150.0)
+    assert setup.lumi == 2.0 and setup.data_lumi is None
+    assert LegacySetup.load(tmp_path / "qcd_est.json", {"data_sample": "data_x"}).data_lumi == 54.2
     acc = setup.accumulator(log=lambda m: None)
     setup.fill_mc(acc, log=lambda m: None)
     res = estimate(acc.inputs(), setup.massfit, window=setup.window, log=lambda m: None)
@@ -231,9 +239,14 @@ def test_hist_setup_matches_events(tmp_path):
     assert np.allclose(res["smooth"]["VV"][0], ref["smooth"]["VV"][0], rtol=1e-12)
     assert np.allclose(res["smooth"]["VV"][1], ref["smooth"]["VV"][1], rtol=1e-12)
     assert np.allclose(res["bundles"]["qcd_predict"]["yield"], ref["bundles"]["qcd_predict"]["yield"], rtol=1e-9)
-    write_root(tmp_path / "q.root", res, sr_csv_hash(tmp_path / "sr.csv"), log=lambda m: None)
+    assert setup.lumi == 2.0 and setup.data_lumi is None  # the luminosity of the pickles, no data
+    with pytest.raises(ValueError, match="no data"):
+        write_root(tmp_path / "q.root", res, sr_csv_hash(tmp_path / "sr.csv"), setup.lumi, 2.0, log=lambda m: None)
+    write_root(tmp_path / "q.root", res, sr_csv_hash(tmp_path / "sr.csv"), setup.lumi, setup.data_lumi,
+               log=lambda m: None)
     with uproot.open(tmp_path / "q.root") as f:
         assert f["metadata/signal_regions"].classname == "TTree"
+        assert f["massfit/settings/mc_lumi"].values()[0] == 2.0 and "massfit/settings/data_lumi" not in f
 
 
 def test_skim_setup_data_per_file_and_mc_lumi(tmp_path):
@@ -282,13 +295,14 @@ def test_skim_setup_data_per_file_and_mc_lumi(tmp_path):
 
     setup, inp = run(None)  # with data: MC at the data's luminosity (100 of the config's 200 fb^-1)
     assert setup.mc_scale == pytest.approx(0.5) and setup.lumi == 100.0 and setup.massfit.blind_window == (50.0, 150.0)
+    assert setup.data_lumi == 100.0
     ref = MassfitAccumulator(setup.massfit, BOXES, CLASSES, {}, ["QCD"], (50, 150), log=lambda m: None)
     ref.fill_data(dmass.astype(np.float32), proba=dproba)
     assert np.array_equal(inp.data, ref.data)
     assert (inp.data[1:, inp.blinded] == 0).all() and inp.data[0, inp.blinded].sum() > 0
     assert inp.data[1:, ~inp.blinded].sum() > 0
     setup50, inp50 = run(50.0)
-    assert setup50.mc_scale == pytest.approx(0.25) and setup50.lumi == 50.0
+    assert setup50.mc_scale == pytest.approx(0.25) and setup50.lumi == 50.0 and setup50.data_lumi == 100.0
     assert np.allclose(inp50.sums["s_QCD"][0], 0.5 * inp.sums["s_QCD"][0], rtol=1e-12)
     assert np.allclose(inp50.sums["s_QCD"][1], 0.25 * inp.sums["s_QCD"][1], rtol=1e-12)
     assert np.array_equal(inp50.data, inp.data)
