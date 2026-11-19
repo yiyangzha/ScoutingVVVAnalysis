@@ -328,8 +328,6 @@ def ttbar_cr(
     cutflow, the pass/fail fit histogram and the CR control distributions;
     scripts/fit_jms_jmr.py fits them.
     """
-    if batches is not None and not batch_files:
-        raise typer.BadParameter("--batches requires --batch-files")
     from coffea import processor
 
     from vvv.config import TTBAR_CR
@@ -358,7 +356,7 @@ def ttbar_cr(
     for name in samples:
         files = _load_filelist(name, redirector)[:max_files]
         file_batches = [files[i:i + batch_files] for i in range(0, len(files), batch_files)] if batch_files else [files]
-        selected = parse_batch_range(batches, len(file_batches)) if batches is not None else range(len(file_batches))
+        selected = batch_selection(batches, batch_files, len(file_batches))
         work[name] = (file_batches, selected)
     for name, (file_batches, selected) in work.items():
         for i in selected:
@@ -372,6 +370,16 @@ def ttbar_cr(
             _dump(out, path)
             label = f"{name} batch {i}/{len(file_batches)}" if batch_files else name
             typer.echo(f"{label}: {json.dumps(out['cutflow'][name])}")
+
+
+def batch_selection(batches: str | None, batch_files: int | None, n_batches: int) -> range:
+    """The batch indices to process: all of them without --batches, else parse_batch_range of the spec;
+    --batches needs --batch-files."""
+    if batches is None:
+        return range(n_batches)
+    if not batch_files:
+        raise typer.BadParameter("--batches requires --batch-files")
+    return parse_batch_range(batches, n_batches)
 
 
 def parse_batch_range(spec: str, n_batches: int) -> range:

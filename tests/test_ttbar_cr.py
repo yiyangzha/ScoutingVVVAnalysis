@@ -4,7 +4,7 @@ import pytest
 import typer
 from coffea.nanoevents.methods import candidate
 
-from vvv.cli import app, parse_batch_range
+from vvv.cli import batch_selection, parse_batch_range
 from vvv.config import TTBAR_CR
 from vvv.corrections.jms_fit import PassFail, edges, fit_peak, measure, model
 from vvv.processors.ttbar_cr import MU_INT_FIELDS, PROBS, _gen_value, cr_objects, cr_variables, tree_mask
@@ -121,8 +121,9 @@ def test_batch_range():
             parse_batch_range(spec, 10)
 
 
-def test_batches_requires_batch_files():
-    from typer.testing import CliRunner
-
-    result = CliRunner().invoke(app, ["ttbar-cr", "ttbar_semilep", "--batches", "0:2"])
-    assert result.exit_code == 2 and "--batches requires --batch-files" in result.output
+def test_batch_selection():
+    assert batch_selection(None, None, 4) == range(4)
+    assert batch_selection(None, 50, 4) == range(4)
+    assert batch_selection("1:3", 50, 4) == range(1, 3)
+    with pytest.raises(typer.BadParameter, match="--batches requires --batch-files"):
+        batch_selection("0:2", None, 4)
