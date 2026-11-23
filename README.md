@@ -153,9 +153,10 @@ subtraction, JEC, rho recovery, JER, Type-1 MET, jet veto map) without JMS/JMR. 
 - `probe`: AK8 jets with |eta| < 2.4 and |dphi(mu_vtx[0])| > 1.5708.
 
 The tree requires >= 1 of each of mu_vtx, ak4 and ak8, in events kept by the jet veto map. The
-JMS/JMR values in `data/corrections/jms_jmr_results.json` were fitted before the lepton subtraction,
-the new JER and the jet veto map (see [Event and jet treatment](#event-and-jet-treatment)); they
-need a refit with this CR definition. The output per sample is a pickle with the
+JMS/JMR values in `data/corrections/jms_jmr_results.json` (2026-11-23: JMS 1.057 +- 0.028,
+JMR 0.887 +- 0.297) are fitted with this CR definition, including the lepton subtraction, the new
+JER and the jet veto map (see [Event and jet treatment](#event-and-jet-treatment)). The output
+per sample is a pickle with the
 cutflow, the pass/fail probe-mass histogram of the fit and the CR control distributions. These
 are filled for the events that pass the fit selection of `configs/jms_jmr.json`, split by the probe
 W tag. With `--skim-dir`, the whole `ttbar_cr` tree (legacy branch names, `weight`, pileup ratios)
@@ -427,8 +428,9 @@ Known limitations, kept for later work:
 - The AK8 soft-drop mass takes the AK8 jet-level JEC and JER, and the JMS/JMR measured in the ttbar
   CR. The JMAR recipe (soft-drop subjets with AK4 JEC/JER, no dedicated JMS/JMR, residual JMS 1 %
   and JMR 2 %) is for offline jets and needs the subjets in the production.
-- JMR: with JMR = 1 the nominal has no extra smearing and `jmr_down` equals the nominal, because
-  smearing can only widen the distribution: the JMR nuisance is one-sided. The latest JMAR
+- JMR: with JMR <= 1 (the adopted measurement is 0.887 +- 0.297) the nominal has no extra smearing
+  and `jmr_down` equals the nominal, because smearing can only widen the distribution: the JMR
+  nuisance is one-sided (`jmr_up` smears with JMR + its uncertainty, 1.184). The latest JMAR
   recommendation treats JMR as a width variation of the nominal mass templates.
 - MET noise filters cannot be applied: the scouting data store no `Flag_*` (the MC ones come from
   the offline MiniAOD). There is no unclustered-energy MET uncertainty.
@@ -470,7 +472,8 @@ The validations below hold for the code at 45bb03e; the later changes of
   (legacy budgets); 1lep and 2lep without decorrelation (QCD from MC there).
 - SRs (`configs/signal_regions/*.json`, deterministic): ABCD categories with region-independent
   transfer factors from the loosened SR boxes (`scripts/reference_tf.py --loosen`).
-- JMS 1.049 +- 0.043, JMR 1 +- 0.52 (`data/corrections/jms_jmr_results.json`, from the coffea ttbar CR).
+- JMS 1.049 +- 0.043, JMR 1 +- 0.52 (the coffea ttbar CR fit of 2026-11-10; replaced in
+  `data/corrections/jms_jmr_results.json` on 2026-11-23).
 - This baseline was made with the event and jet treatment before
   [Event and jet treatment](#event-and-jet-treatment) (triggers, jet ID, lepton subtraction, JER, jet
   veto map); its products and numbers have to be remade with the current code.
@@ -500,9 +503,9 @@ Physics and validation:
 - [ ] Scouting-specific JECs: the AK8 JEC applied to the groomed mass puts the W peak at ~98 GeV;
       the JMS/JMR fit window (60-140 GeV) is an interim fix.
 - [x] ttbar control-region processor and JMS/JMR fit (`vvv ttbar-cr`, `scripts/fit_jms_jmr.py`).
-- [ ] Full-statistics CR production and JMS/JMR refit after the JEC (the legacy values are stale),
-      then replace `data/corrections/jms_jmr_results.json`; the refit also needs the lepton
-      subtraction, the Summer24 JER and the jet veto map of the CR. JMR is statistics-limited:
+- [x] Full-statistics CR production and JMS/JMR refit with the lepton subtraction, the Summer24 JER
+      and the jet veto map of the CR (2026-11-23): JMS 1.057 +- 0.028 and JMR 0.887 +- 0.297
+      adopted as measured in `data/corrections/jms_jmr_results.json`. JMR is statistics-limited:
       more data would help.
 - [ ] JMR uncertainty as a width variation of the nominal mass templates (JMAR), instead of the
       one-sided smearing.

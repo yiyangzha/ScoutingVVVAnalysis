@@ -10,56 +10,56 @@
   "w_mass_ref": 80.38,
   "pass": {
     "data": {
-      "mu": 104.06622679690825,
-      "mu_err": 4.216273605867752,
-      "sigma": 15.066320327649072,
-      "sigma_err": 6.408165299667601,
-      "B": 6.145003437107876,
-      "C": -0.000840721692058432,
+      "mu": 104.3644657523551,
+      "mu_err": 2.7761635069227366,
+      "sigma": 10.490486896349617,
+      "sigma_err": 3.488910923026407,
+      "B": 6.100217077844856,
+      "C": 0.004388444056501083,
       "m0": 60,
-      "chi2": 11.205007798149456,
+      "chi2": 10.274830233964,
       "ndf": 11,
       "popt": [
-        11.379026316324866,
-        104.06622679690825,
-        15.066320327649072,
-        6.145003437107876,
-        -0.000840721692058432,
-        60.00000045118629
+        10.159903343658563,
+        104.3644657523551,
+        10.490486896349617,
+        6.100217077844856,
+        0.004388444056501083,
+        59.99999900190977
       ],
       "label": "Data (Pass)"
     },
     "mc": {
-      "mu": 99.16625896683117,
-      "mu_err": 0.5094714270393077,
-      "sigma": 12.304415892429207,
-      "sigma_err": 0.45216581864552124,
-      "B": 3.6645592330037076,
-      "C": -0.014515536063551476,
+      "mu": 98.77240903132788,
+      "mu_err": 0.3985759083178951,
+      "sigma": 11.829601090439416,
+      "sigma_err": 0.5078812477830692,
+      "B": 2.456713501154301,
+      "C": -0.018585048304676395,
       "m0": 60,
-      "chi2": 10.85511183246622,
+      "chi2": 7.003062221894088,
       "ndf": 11,
       "popt": [
-        36.71867449744553,
-        99.16625896683117,
-        12.304415892429207,
-        3.6645592330037076,
-        -0.014515536063551476,
-        59.9999996656676
+        30.022852448748548,
+        98.77240903132788,
+        11.829601090439416,
+        2.456713501154301,
+        -0.018585048304676395,
+        60.000000414797825
       ],
       "label": "MC (Pass)"
     }
   },
   "yields": {
-    "data_pass": 198.0,
-    "mc_pass": 340.68383688072106,
-    "data_fail": 917.0,
-    "mc_fail": 1322.7108026858914
+    "data_pass": 146.0,
+    "mc_pass": 270.14199692846336,
+    "data_fail": 692.0,
+    "mc_fail": 1182.798112745938
   },
-  "JMS": 1.0494116434473546,
-  "JMS_err": 0.04285768523583544,
-  "JMR": 1.0,
-  "JMR_err": 0.5227423102713097,
+  "JMS": 1.0566155748945394,
+  "JMS_err": 0.02842823455016922,
+  "JMR": 0.88679971675697,
+  "JMR_err": 0.2973778648295359,
   "selection": {
     "ScoutingMuonVtx_pt_1": [
       30,
@@ -110,7 +110,5 @@
       null
     ]
   },
-  "JMR_measured": 1.2244644897706392,
-  "JMR_measured_err": 0.5227423102713097,
-  "note": "2026-11-10, coffea ttbar CR on data_2024 (54.2/fb), fit window 60-140 GeV (configs/jms_jmr.json). JMS as measured. JMR fixed to 1 (no nominal smearing) with the measured uncertainty as its variation, because the measured value (JMR_measured) is dominated by the data statistics. Interim until scouting-specific JECs calibrate the groomed mass. Previous values (legacy, before the JEC): JMS 1.0713 +- 0.0273, JMR 0.5249 +- 0.2456."
+  "note": "2026-11-23, coffea ttbar CR with the event and jet treatment of PR #1 (lepton subtraction, Summer24 JER, jet veto map) on data_2024: 1289 of 1300 batches of 100 files; 1131 of 129,913 files (2024I_part4 and 40 files of 2024G_part2) were unreadable and are no longer available, which lowers the data statistics only. Fit window 60-140 GeV (configs/jms_jmr.json). JMS and JMR adopted as measured; with JMR < 1 the nominal gets no smearing (smearing can only widen the distribution): jmr_up = 1.184, jmr_down = nominal. Previous values (2026-11-10, before the PR #1 treatment): JMS 1.0494 +- 0.0429, JMR fixed to 1 +- 0.5227 (measured 1.2245)."
 }
